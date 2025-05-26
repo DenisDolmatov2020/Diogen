@@ -1,0 +1,40 @@
+[
+  {
+    "component_name": "info_panel",
+    "parent_block_id": "block-0-1-0",
+    "action_mode": "deep_layout",
+    "is_need_meta": true,
+    "action_params": [
+      {
+        "variable": "keys",
+        "data": ["19003", "19004", "19005"]
+      }
+    ]
+  },
+  {
+    "component_name": "action_button",
+    "parent_block_id": "block-0-1-1",
+    "components_id": "btn-0-1-1-0",
+    "action_mode": "layout",
+    "is_need_meta": true,
+    "action_params": [
+      {
+        "variable": "keys",
+        "data": ["11071"]
+      }
+    ]
+  },
+  {
+    "component_name": "text_block",
+    "parent_block_id": "block-0-1-1",
+    "components_id": "txt-0-1-1-0",
+    "action_mode": "layout",
+    "is_need_meta": true,
+    "action_params": [
+      {
+        "variable": "keys",
+        "data": ["article_title"]
+      }
+    ]
+  }
+] 
