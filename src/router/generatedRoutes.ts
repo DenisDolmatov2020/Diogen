@@ -22,7 +22,7 @@ function fsPathToRoutePath(fsPath: string): string {
 export function buildRoutes(): RouteRecordRaw[] {
   return Object.entries(pages).map(([fsPath, loader]) => ({
     path: fsPathToRoutePath(fsPath),
-    component: () => import('../components/RoutePage.vue'),
+    component: () => import('../components/core/RoutePage.vue'),
     meta: { 
       loadJson: loader,
       configPath: fsPath

@@ -1,5 +1,5 @@
 <template>
-  <div class="text-block-container">
+  <div class="text-block-container p-2">
     <div v-if="!skeleton" class="text-content">
       <!-- Редактируемый режим -->
       <div v-if="isEditable" class="editable-content">
@@ -11,7 +11,7 @@
           :placeholder="placeholder"
           class="text-textarea"
           rows="4"
-        ></textarea>
+        />
         <input
           v-else
           v-model="editableValue"

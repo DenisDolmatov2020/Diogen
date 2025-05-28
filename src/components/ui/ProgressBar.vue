@@ -1,5 +1,5 @@
 <template>
-  <div class="progress-bar-container">
+  <div class="progress-bar-container p-2">
     <div v-if="!skeleton" class="progress-content">
       <div class="progress-header">
         <span class="progress-label">{{ label }}</span>
