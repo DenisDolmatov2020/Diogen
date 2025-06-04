@@ -1,20 +1,36 @@
 <template>
-  <component 
-    :is="getComponent(block.component_name)"
-    :data="block"
-    :skeleton="skeleton"
-    @action="$emit('action', $event)"
-    :class="getBlockClasses(block)"
+  <div 
+    class="block-wrapper"
+    :class="getWrapperClasses()"
+    :style="getWrapperStyles()"
   >
-    <!-- Рекурсивно рендерим дочерние блоки -->
-    <BlockRenderer 
-      v-for="child in block.children" 
-      :block="child"
-      :key="child.block_id || child.components_id || Math.random()"
-      :skeleton="skeleton"
-      @action="$emit('action', $event)"
+    <!-- Индикатор уровня вложенности -->
+    <div v-if="level > 0" class="level-indicator">
+      <div class="level-line"></div>
+      <div class="level-number">{{ level }}</div>
+    </div>
+    
+    <!-- Основной компонент (без слотов для детей) -->
+    <component 
+      :is="getComponent(props.block.component_name)"
+      :data="props.block"
+      :skeleton="props.skeleton"
+      :class="getBlockClasses(props.block)"
+      @action="handleAction"
     />
-  </component>
+    
+    <!-- Дочерние блоки рендерятся отдельно, после родителя -->
+    <div v-if="props.block.children?.length" class="children-container">
+      <BlockRenderer 
+        v-for="(child, index) in props.block.children" 
+        :block="child"
+        :key="`child-${index}`"
+        :skeleton="props.skeleton"
+        :level="level + 1"
+        @action="handleAction"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -23,22 +39,21 @@ import InfoPanel from '@/components/ui/InfoPanel.vue'
 import ProgressBar from '@/components/ui/ProgressBar.vue'
 import TextBlock from '@/components/ui/TextBlock.vue'
 import UnknownComponent from '@/components/ui/UnknownComponent.vue'
-import type { BlockConfig } from '@/api/pageApi.ts'
+import type { TreeBlock } from '@/types/block'
 
-interface BlockWithChildren extends BlockConfig {
-  children?: BlockWithChildren[]
-}
-
-defineProps<{
-  block: BlockWithChildren
+const props = defineProps<{
+  block: TreeBlock
   skeleton: boolean
+  level?: number
 }>()
 
 const emit = defineEmits<{
   action: [data: any]
 }>()
 
-// Маппинг component_name на Vue-компоненты
+// Уровень вложенности по умолчанию
+const level = props.level || 0
+
 const componentMap: Record<string, any> = {
   action_button: ActionButton,
   info_panel: InfoPanel,
@@ -50,58 +65,133 @@ function getComponent(componentName: string) {
   return componentMap[componentName] || UnknownComponent
 }
 
-function getBlockClasses(block: BlockConfig) {
+function getBlockClasses(block: TreeBlock) {
   const classes = ['block-container']
-  
-  // Добавляем классы на основе уровня вложенности
-  const level = getBlockLevel(block.parent_block_id)
-  classes.push(`block-level-${level}`)
   
   // Добавляем класс на основе action_mode
   if (block.action_mode) {
     classes.push(`action-mode-${block.action_mode.replace('_', '-')}`)
   }
   
+  // Добавляем класс на основе наличия детей
+  if (block.children && block.children.length > 0) {
+    classes.push('has-children')
+  }
+  
   return classes
 }
 
-function getBlockLevel(parentBlockId: string): number {
-  // Считаем количество дефисов в parent_block_id
-  // block-0 -> уровень 1
-  // block-0-1 -> уровень 2
-  // block-0-1-1 -> уровень 3
-  return (parentBlockId.match(/-/g) || []).length
+function getWrapperClasses() {
+  const classes = ['block-wrapper']
+  
+  if (level === 0) {
+    classes.push('root-level')
+  } else {
+    classes.push('nested-level')
+    classes.push(`level-${Math.min(level, 5)}`) // Ограничиваем до 5 уровней для стилей
+  }
+  
+  if (props.block.children && props.block.children.length > 0) {
+    classes.push('has-children')
+  }
+  
+  return classes
+}
+
+function getWrapperStyles() {
+  return {
+    '--nesting-level': level,
+    '--indent': `${level * 20}px`
+  }
+}
+
+function handleAction(actionData: any) {
+  const enrichedAction = {
+    ...actionData,
+    source_component: props.block.component_name,
+    source_mode: props.block.action_mode,
+    nesting_level: level
+  }
+  emit('action', enrichedAction)
 }
 </script>
 
 <style scoped>
-.block-container {
-  @apply w-full;
+.block-wrapper {
+  @apply relative;
+  margin-left: var(--indent);
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
 }
 
-/* Стили для разных уровней вложенности */
-.block-level-1 {
-  @apply mb-6;
+.block-wrapper.root-level {
+  @apply border-l-0 ml-0;
 }
 
-.block-level-2 {
-  @apply flex flex-wrap gap-4 mb-4;
+.block-wrapper.nested-level {
+  @apply pl-4 my-2;
 }
 
-.block-level-3 {
-  @apply flex-1 min-w-0;
+/* Цвета для разных уровней вложенности */
+.block-wrapper.level-1 {
+  @apply border-l-blue-300;
 }
 
-/* Стили для разных режимов действий */
-.action-mode-layout {
-  @apply bg-gray-50 p-4 rounded-lg;
+.block-wrapper.level-2 {
+  @apply border-l-green-300;
 }
 
-.action-mode-editable-layout {
-  @apply bg-blue-50 p-4 rounded-lg border-2 border-blue-200;
+.block-wrapper.level-3 {
+  @apply border-l-yellow-300;
 }
 
-.action-mode-deep-layout {
-  @apply bg-green-50 p-4 rounded-lg border border-green-200;
+.block-wrapper.level-4 {
+  @apply border-l-purple-300;
+}
+
+.block-wrapper.level-5 {
+  @apply border-l-red-300;
+}
+
+/* Индикатор уровня */
+.level-indicator {
+  @apply absolute -left-4 top-2 flex items-center gap-1;
+}
+
+.level-line {
+  @apply w-3 h-0.5 bg-gray-300;
+}
+
+.level-number {
+  @apply text-xs bg-gray-200 text-gray-600 ml-0.5 px-1 rounded;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+/* Эффекты при наведении */
+.block-wrapper:hover {
+  @apply bg-gray-50 rounded;
+}
+
+.block-wrapper.has-children:hover {
+  @apply bg-blue-50;
+}
+
+.block-wrapper.has-children {
+  @apply border-l-2;
+}
+
+/* Дополнительная визуализация для блоков с детьми */
+.block-wrapper.has-children > .block-container {
+  @apply border border-gray-200 rounded-lg p-3 bg-white shadow-sm;
+}
+
+.block-wrapper.root-level.has-children > .block-container {
+  @apply border-2 border-blue-200;
+}
+
+/* Контейнер для дочерних блоков */
+.children-container {
+  @apply mt-2;
 }
 </style> 

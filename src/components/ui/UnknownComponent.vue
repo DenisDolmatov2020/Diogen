@@ -20,10 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import type { BlockConfig } from '@/api/pageApi'
+import { computed } from 'vue'
+import type { TreeBlock } from '@/types/block'
 
-defineProps<{
-  data: BlockConfig
+const props = defineProps<{
+  data: TreeBlock
   skeleton?: boolean
 }>()
 </script>

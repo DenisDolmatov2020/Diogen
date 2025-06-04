@@ -1,235 +1,275 @@
 <template>
-  <div class="text-block-container p-2">
-    <div v-if="!skeleton" class="text-content">
-      <!-- Редактируемый режим -->
-      <div v-if="isEditable" class="editable-content">
-        <label v-if="label" class="text-label">{{ label }}</label>
-        <textarea
-          v-if="isMultiline"
-          v-model="editableValue"
-          @input="handleInput"
-          :placeholder="placeholder"
-          class="text-textarea"
-          rows="4"
-        />
-        <input
-          v-else
-          v-model="editableValue"
-          @input="handleInput"
-          :placeholder="placeholder"
-          class="text-input"
-          type="text"
-        />
-      </div>
+  <div class="text-block-wrapper" :class="{ editable: isEditable, modified: isModified }">
+    <!-- Заголовок блока, если есть -->
+    <div v-if="getTitle()" class="text-block-title">
+      {{ getTitle() }}
+      <span v-if="isModified" class="modified-indicator">•</span>
+    </div>
+    
+    <!-- Редактируемое поле -->
+    <div v-if="isEditable" class="edit-field">
+      <!-- Многострочное поле -->
+      <textarea 
+        v-if="isMultiline"
+        v-model="editableValue"
+        :placeholder="getPlaceholder()"
+        class="editable-input multiline"
+        @input="handleInput"
+      ></textarea>
       
-      <!-- Режим только для чтения -->
-      <div v-else class="readonly-content">
-        <h3 v-if="isTitle" class="text-title">{{ displayValue }}</h3>
-        <p v-else class="text-paragraph">{{ displayValue }}</p>
+      <!-- Однострочное поле -->
+      <input 
+        v-else
+        type="text"
+        v-model="editableValue"
+        :placeholder="getPlaceholder()"
+        class="editable-input"
+        @input="handleInput"
+      />
+      
+      <!-- Лейбл поля, если есть -->
+      <div v-if="getLabel()" class="input-label">
+        {{ getLabel() }}
       </div>
     </div>
     
-    <!-- Skeleton состояние -->
-    <div v-else class="skeleton-text">
-      <div v-if="isEditable" class="skeleton-input"></div>
-      <div v-else-if="isTitle" class="skeleton-title"></div>
-      <div v-else class="skeleton-paragraph"></div>
+    <!-- Режим просмотра (не редактирования) -->
+    <div v-else class="text-content">
+      {{ getContent() }}
     </div>
     
-    <!-- Дочерние элементы -->
-    <slot />
+    <!-- Слот для дочерних элементов -->
+    <slot></slot>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import type { BlockConfig } from '@/api/pageApi'
+import { ref, computed, onMounted, watch } from 'vue'
+import type { TreeBlock } from '@/types/block'
 
 const props = defineProps<{
-  data: BlockConfig
-  skeleton: boolean
+  data: TreeBlock
+  skeleton?: boolean
 }>()
 
 const emit = defineEmits<{
-  action: [data: { type: string; payload: any }]
+  action: [data: any]
 }>()
 
+// Значение для редактирования
 const editableValue = ref('')
+// Оригинальное значение (для сравнения изменений)
+const originalValue = ref('')
+// Флаг, указывающий, было ли поле изменено
+const isModified = ref(false)
 
+// Признак того, что это редактируемое поле
 const isEditable = computed(() => {
   return props.data.action_mode === 'editable_layout'
 })
 
-const isTitle = computed(() => {
-  const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
-  const key = keysParam?.data?.[0]
-  return key === 'article_title' || key === 'project_name' || key === 'order_title'
+// Получение имени поля (ключа)
+const fieldKey = computed(() => {
+  const keysParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === 'keys')
+  return keysParam?.data?.[0] || 'text'
 })
 
+// Многострочное ли поле
 const isMultiline = computed(() => {
-  const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
-  const key = keysParam?.data?.[0]
-  return key === 'article_content' || key === 'justification' || key === 'aim'
+  // Если поле описания или комментария, то многострочное
+  const key = fieldKey.value.toLowerCase()
+  return key.includes('description') || 
+         key.includes('comment') || 
+         key.includes('justification') ||
+         key.includes('aim') ||
+         key.includes('task') ||
+         key.includes('relevance')
 })
 
-const label = computed(() => {
-  const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
-  if (keysParam?.data?.[0]) {
-    return getFieldLabel(keysParam.data[0])
+// Получение заголовка поля
+function getTitle() {
+  // Пытаемся найти title в параметрах
+  const titleParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === 'title')
+  
+  if (titleParam?.data) {
+    return titleParam.data
   }
+  
+  // Иначе преобразуем имя поля в человекочитаемый заголовок
+  return formatFieldName(fieldKey.value)
+}
+
+// Получение метки поля
+function getLabel() {
+  // Пытаемся найти label в параметрах
+  const labelParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === 'label')
+  
+  if (labelParam?.data) {
+    return labelParam.data
+  }
+  
+  return null
+}
+
+// Получение плейсхолдера
+function getPlaceholder() {
+  // Пытаемся найти placeholder в параметрах
+  const placeholderParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === 'placeholder')
+  
+  if (placeholderParam?.data) {
+    return placeholderParam.data
+  }
+  
+  return `Введите ${getTitle().toLowerCase()}`
+}
+
+// Получение содержимого
+function getContent() {
+  // Ищем параметр с именем поля
+  const valueParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === fieldKey.value)
+  
+  if (valueParam?.data) {
+    return valueParam.data
+  }
+  
+  // Ищем в data параметре если он есть
+  const dataParam = props.data.action_params?.find(
+    (p: { variable: string }) => p.variable === 'data')
+  
+  if (dataParam?.data) {
+    return dataParam.data
+  }
+  
+  // Возвращаем пустую строку вместо текста "не задано"
   return ''
-})
-
-const placeholder = computed(() => {
-  const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
-  if (keysParam?.data?.[0]) {
-    return getFieldPlaceholder(keysParam.data[0])
-  }
-  return 'Введите текст...'
-})
-
-const displayValue = computed(() => {
-  if (isEditable.value) {
-    return editableValue.value
-  }
-  
-  const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
-  const referenceParam = props.data.action_params?.find(p => p.variable === 'reference_id')
-  
-  if (keysParam?.data?.[0]) {
-    const value = getFieldValue(keysParam.data[0], referenceParam?.data)
-    return value
-  }
-  
-  return 'Текст не загружен'
-})
-
-function getFieldLabel(key: string): string {
-  const labels: Record<string, string> = {
-    'article_title': 'Заголовок статьи',
-    'article_content': 'Содержание статьи',
-    'project_name': 'Название проекта',
-    'order_title': 'Название заказа',
-    '19010': 'Описание',
-    'justification': 'Обоснование',
-    'aim': 'Цель',
-    'task': 'Задачи'
-  }
-  
-  return labels[key] || 'Поле'
 }
 
-function getFieldPlaceholder(key: string): string {
-  const placeholders: Record<string, string> = {
-    'article_title': 'Введите заголовок статьи...',
-    'article_content': 'Введите содержание статьи...',
-    'project_name': 'Введите название проекта...',
-    'order_title': 'Введите название заказа...',
-    'justification': 'Введите обоснование...',
-    'aim': 'Введите цель...',
-    'task': 'Введите задачи...'
-  }
+// Форматирование имени поля
+function formatFieldName(name: string) {
+  if (!name) return 'Текст'
   
-  return placeholders[key] || 'Введите текст...'
+  // Разбиваем snake_case или camelCase на слова
+  const words = name
+    .replace(/([A-Z])/g, ' $1') // Разбиваем camelCase
+    .replace(/_/g, ' ') // Разбиваем snake_case
+    .toLowerCase()
+    .split(' ')
+  
+  // Делаем первую букву заглавной для каждого слова
+  const formattedWords = words.map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  )
+  
+  return formattedWords.join(' ')
 }
 
-function getFieldValue(key: string, referenceId?: string): string {
-  const values: Record<string, string> = {
-    'article_title': 'Новая статья о Vue.js',
-    'article_content': 'Vue.js - это прогрессивный JavaScript фреймворк для создания пользовательских интерфейсов...',
-    'project_name': 'Проект "Диоген"',
-    'order_title': 'Новый заказ на разработку',
-    '19010': 'Подробное описание элемента',
-    'justification': 'Обоснование необходимости проекта...',
-    'aim': 'Основная цель проекта...',
-    'task': 'Список задач для выполнения...'
-  }
-  
-  let value = values[key] || 'Значение не найдено'
-  
-  // Если есть reference_id, показываем, что данные загружены
-  if (referenceId) {
-    value += ' ✓'
-  }
-  
-  return value
-}
-
+// Обработчик изменения значения
 function handleInput() {
-  emit('action', {
-    type: 'text_change',
-    payload: {
-      component_id: props.data.components_id,
-      field_key: props.data.action_params?.find(p => p.variable === 'keys')?.data?.[0],
-      value: editableValue.value
-    }
-  })
+  // Теперь только отмечаем, что поле изменилось, но не отправляем событие
+  isModified.value = editableValue.value !== originalValue.value
 }
 
-// Инициализируем значение для редактируемых полей
-watch(() => props.data, () => {
-  if (isEditable.value && !editableValue.value) {
-    editableValue.value = displayValue.value.replace(' ✓', '')
+// Публичный метод для получения изменений (будет вызываться ActionButton)
+function getFieldChanges() {
+  if (isModified.value) {
+    return {
+      field: fieldKey.value,
+      value: editableValue.value,
+      originalValue: originalValue.value,
+      isModified: true
+    }
   }
-}, { immediate: true })
+  return null
+}
+
+// Сброс изменений к исходному значению
+function resetChanges() {
+  editableValue.value = originalValue.value
+  isModified.value = false
+}
+
+// Инициализация значения при монтировании
+onMounted(() => {
+  const content = getContent()
+  editableValue.value = content
+  originalValue.value = content
+})
+
+// Обновляем редактируемое значение при изменении данных
+watch(() => props.data, () => {
+  const content = getContent()
+  editableValue.value = content
+  originalValue.value = content
+  isModified.value = false
+}, { deep: true })
+
+// Экспортируем методы, чтобы к ним могли обращаться родительские компоненты
+defineExpose({
+  getFieldChanges,
+  resetChanges,
+  isModified: computed(() => isModified.value)
+})
 </script>
 
 <style scoped>
-.text-block-container {
-  @apply w-full;
+.text-block-wrapper {
+  @apply w-full max-w-3xl mb-4 ml-2;
+}
+
+.text-block-title {
+  @apply text-lg font-medium mb-2 text-gray-700;
+  @apply flex items-center gap-2;
+}
+
+.modified-indicator {
+  @apply text-blue-500 font-bold text-xl;
+  animation: pulse 1.5s infinite;
 }
 
 .text-content {
-  @apply w-full;
+  @apply text-gray-600 whitespace-pre-line;
 }
 
-.editable-content {
-  @apply space-y-2;
+/* Стили для редактируемого режима */
+.editable {
+  @apply border border-gray-300 rounded-lg p-4 bg-white;
+  @apply transition-shadow duration-300;
+  @apply hover:shadow-md;
 }
 
-.text-label {
-  @apply block text-sm font-medium text-gray-700;
+.editable.modified {
+  @apply border-blue-400 bg-blue-50;
 }
 
-.text-input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm;
+.edit-field {
+  @apply relative;
+}
+
+.editable-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md;
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply transition-colors duration-200;
 }
 
-.text-textarea {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm;
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
-  @apply resize-y;
+.editable.modified .editable-input {
+  @apply border-blue-400;
 }
 
-.readonly-content {
-  @apply w-full;
+.editable-input.multiline {
+  @apply min-h-[100px] resize-y;
 }
 
-.text-title {
-  @apply text-2xl font-bold text-gray-900 mb-4;
+.input-label {
+  @apply mt-1 text-xs text-gray-500;
 }
 
-.text-paragraph {
-  @apply text-gray-700 leading-relaxed;
-}
-
-/* Skeleton стили */
-.skeleton-text {
-  @apply w-full;
-}
-
-.skeleton-input {
-  @apply h-10 bg-gray-300 rounded animate-pulse;
-}
-
-.skeleton-title {
-  @apply h-8 bg-gray-300 rounded animate-pulse;
-  width: 60%;
-}
-
-.skeleton-paragraph {
-  @apply h-4 bg-gray-300 rounded animate-pulse;
-  width: 80%;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

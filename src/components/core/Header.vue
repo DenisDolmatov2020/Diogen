@@ -53,6 +53,13 @@ function getRouteLabel(routePath: string): string {
           >
             <span class="nav-link-text">{{ getRouteLabel(routeItem.route) }}</span>
           </RouterLink>
+          <router-link 
+            to="/article/list"
+            class="nav-link"
+            active-class="nav-link-active"
+          >
+            📑 Статьи
+          </router-link>
         </div>
       </div>
     </nav>
@@ -67,10 +74,6 @@ function getRouteLabel(routePath: string): string {
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.nav-container {
-  @apply max-w-7xl mx-auto px-6 py-4;
 }
 
 .nav-content {

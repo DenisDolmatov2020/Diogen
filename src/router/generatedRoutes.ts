@@ -1,14 +1,18 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-// Сканируем все JSON-файлы в папке configs/project_pages
-const pages = import.meta.glob('/src/configs/project_pages/**/*.json')
+// Статический список конфигурационных файлов
+// Обновляется вручную при добавлении новых страниц
+const configFiles = [
+  '/configs/project_pages/test/backend_integration.json',
+  '/configs/project_pages/demo/settings.json'
+  // Добавляйте новые конфиги здесь
+]
 
 function fsPathToRoutePath(fsPath: string): string {
   // Преобразуем путь файла в путь роута
-  // /src/configs/project_pages/article/list.json -> /article/list
-  // /src/configs/project_pages/article/[id].json -> /article/:id
+  // /configs/project_pages/test/backend_integration.json -> /test/backend_integration
   return '/' + fsPath
-    .replace('/src/configs/project_pages/', '')
+    .replace('/configs/project_pages/', '')
     .replace('.json', '')
     .split('/')
     .map(segment => 
@@ -20,20 +24,19 @@ function fsPathToRoutePath(fsPath: string): string {
 }
 
 export function buildRoutes(): RouteRecordRaw[] {
-  return Object.entries(pages).map(([fsPath, loader]) => ({
-    path: fsPathToRoutePath(fsPath),
+  return configFiles.map(configPath => ({
+    path: fsPathToRoutePath(configPath),
     component: () => import('../components/core/RoutePage.vue'),
     meta: { 
-      loadJson: loader,
-      configPath: fsPath
+      configPath: configPath  // Путь к конфигу в public папке
     }
   }))
 }
 
 // Для отладки - показать все сгенерированные маршруты
 export function getGeneratedRoutes() {
-  return Object.keys(pages).map(fsPath => ({
-    file: fsPath,
-    route: fsPathToRoutePath(fsPath)
+  return configFiles.map(configPath => ({
+    file: configPath,
+    route: fsPathToRoutePath(configPath)
   }))
 } 

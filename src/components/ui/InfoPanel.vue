@@ -28,11 +28,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BlockConfig } from '@/api/pageApi'
+import type { TreeBlock } from '@/types/block'
 
 const props = defineProps<{
-  data: BlockConfig
-  skeleton: boolean
+  data: TreeBlock
+  skeleton?: boolean
 }>()
 
 const title = computed(() => {
