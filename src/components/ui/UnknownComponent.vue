@@ -20,10 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { TreeBlock } from '@/types/block'
 
-const props = defineProps<{
+defineProps<{
   data: TreeBlock
   skeleton?: boolean
 }>()

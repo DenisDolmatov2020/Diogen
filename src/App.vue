@@ -2,8 +2,7 @@
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { getGeneratedRoutes } from '@/router/generatedRoutes'
 import { 
-  getCurrentReferenceId, 
-  parseReferenceId
+  getCurrentReferenceId 
 } from '@/utils/referenceIdManager'
 import { ref, onMounted } from 'vue'
 import ReferenceIdPanel from '@/components/core/ReferenceIdPanel.vue'
@@ -39,12 +38,6 @@ function showNotification(message: string, type: 'success' | 'error' = 'success'
       document.body.removeChild(notification)
     }, 500)
   }, 3000)
-}
-
-// Парсинг reference_id для отображения компонентов
-function getParsedRefId() {
-  if (currentRefId.value === 'Не установлен') return null
-  return parseReferenceId(currentRefId.value)
 }
 
 // Обработчик обновления Reference ID из компонента

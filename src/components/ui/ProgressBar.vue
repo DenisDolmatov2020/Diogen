@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { TreeBlock, Item } from '@/types/block'
+import type { TreeBlock } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock

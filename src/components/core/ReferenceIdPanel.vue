@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { getCurrentReferenceId, createNewReferenceIdFromServer, clearReferenceId } from '@/utils/referenceIdManager'
 
 const emit = defineEmits(['close', 'ref-id-updated'])

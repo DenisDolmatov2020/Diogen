@@ -17,7 +17,7 @@
             v-model="editableValues[item.variable]"
             :placeholder="getItemPlaceholder(item)"
             class="editable-input multiline"
-            @input="handleItemInput(item)"
+            @input="handleItemInput"
           ></textarea>
           
           <!-- Однострочное поле -->
@@ -27,7 +27,7 @@
             v-model="editableValues[item.variable]"
             :placeholder="getItemPlaceholder(item)"
             class="editable-input"
-            @input="handleItemInput(item)"
+            @input="handleItemInput"
           />
         </div>
         
@@ -106,10 +106,6 @@ import type { TreeBlock, Item } from '@/types/block'
 const props = defineProps<{
   data: TreeBlock
   skeleton?: boolean
-}>()
-
-const emit = defineEmits<{
-  action: [data: any]
 }>()
 
 // Значение для редактирования (старая логика)
@@ -284,7 +280,7 @@ function getItemPlaceholder(item: Item): string {
 }
 
 // Обработчик изменения значения элемента
-function handleItemInput(item: Item) {
+function handleItemInput() {
   // Просто отмечаем изменение, не отправляем событие
 }
 
