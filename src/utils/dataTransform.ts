@@ -79,8 +79,10 @@ export function treeToFlat(treeBlocks: TreeBlock[]): FlatBlock[] {
       
       // Создаем плоский блок
       const flatBlock: FlatBlock = {
+        components_id: block.components_id,
         component_name: block.component_name,
         component_id: componentId,
+        parent_block_id: block.parent_block_id,
         action_mode: block.action_mode,
         action_params: block.action_params
       }
@@ -143,7 +145,9 @@ export function flatToTree(flatBlocks: FlatBlock[]): TreeBlock[] {
       console.log(`    🌿 Блок ${block.component_name}(${block.component_id}) имеет ${children.length} детей`)
       
       const treeBlock: TreeBlock = {
+        components_id: block.components_id,
         component_name: block.component_name,
+        parent_block_id: block.parent_block_id,
         action_mode: block.action_mode,
         action_params: block.action_params,
         ...(children.length > 0 && { children })
@@ -168,53 +172,92 @@ function getParentId(componentId: string): string | null {
 /**
  * Применяет данные от бэкенда к древовидной структуре
  */
-export function applyBackendData(
-  originalTree: TreeBlock[], 
-  backendFlat: FlatBlock[]
-): TreeBlock[] {
-  console.log('🔧 [applyBackendData] Начинаем применение данных бэкенда')
-  console.log('  📊 Исходное дерево:', JSON.stringify(originalTree, null, 2))
-  console.log('  📤 Данные от бэкенда:', JSON.stringify(backendFlat, null, 2))
+export function applyBackendData(treeBlocks: TreeBlock[], backendData: any[]): TreeBlock[] {
+  console.log('🔄 [applyBackendData] Применяем данные от бэкенда к дереву')
+  console.log('  📊 Входящее дерево:', JSON.stringify(treeBlocks, null, 2))
+  console.log('  📥 Данные от бэкенда:', JSON.stringify(backendData, null, 2))
   
-  // Проверяем валидность входных данных
-  if (!Array.isArray(backendFlat)) {
-    console.warn('⚠️ backendFlat не является массивом, возвращаем исходное дерево')
-    return originalTree
+  // Создаем карту данных от бэкенда по component_id для быстрого поиска
+  const backendMap = new Map<string, any>()
+  
+  // Обрабатываем ответ от бэкенда
+  if (Array.isArray(backendData)) {
+    backendData.forEach((item, index) => {
+      // Если у элемента есть component_id, используем его
+      if (item.component_id !== undefined) {
+        backendMap.set(item.component_id, item)
+        console.log(`  📝 Мапим по component_id: ${item.component_id} → ${item.component_name}`)
+      } else {
+        // Иначе используем индекс как ID
+        backendMap.set(index.toString(), item)
+        console.log(`  📝 Мапим по индексу: ${index} → ${item.component_name}`)
+      }
+    })
   }
   
-  // Преобразуем оригинальное дерево в плоскую структуру для сопоставления
-  const originalFlat = treeToFlat(originalTree)
-  console.log('  🔄 Плоская структура исходного дерева:', JSON.stringify(originalFlat, null, 2))
-  
-  // Создаем карту для быстрого поиска данных от бэкенда
-  const backendMap = new Map<string, FlatBlock>()
-  backendFlat.forEach(block => {
-    if (block && block.component_id) {
-      backendMap.set(block.component_id, block)
-    }
-  })
-  console.log('  🗺️ Карта данных бэкенда:', Array.from(backendMap.keys()))
-  
-  // Обновляем данные в плоской структуре
-  const updatedFlat = originalFlat.map(originalBlock => {
-    const backendBlock = backendMap.get(originalBlock.component_id)
+  function applyDataToBlock(block: TreeBlock, blockIndex: string = '0'): TreeBlock {
+    console.log(`  🔧 Обрабатываем блок: ${block.component_name} (ID: ${blockIndex})`)
     
-    if (backendBlock && backendBlock.action_params) {
-      console.log(`    ✅ Обновляем блок ${originalBlock.component_name} (${originalBlock.component_id})`)
-      return {
-        ...originalBlock,
-        action_params: backendBlock.action_params // Используем обновленные параметры от бэкенда
+    // Ищем соответствующие данные от бэкенда
+    const backendItem = backendMap.get(blockIndex) || backendMap.get(block.components_id || '')
+    
+    if (backendItem) {
+      console.log(`  ✅ Найдены данные для блока ${block.component_name}:`, backendItem)
+      
+      // Создаем новый блок с сохранением исходных данных и добавлением новых
+      const updatedBlock: TreeBlock = {
+        ...block,
+        // Добавляем items если они есть
+        ...(backendItem.items && { items: backendItem.items }),
+        // Обновляем action_params, добавляя новые данные
+        action_params: block.action_params ? [...block.action_params] : []
       }
+      
+      // Добавляем данные от бэкенда в action_params, если они не системные
+      if (backendItem.action_params) {
+        backendItem.action_params.forEach((param: any) => {
+          // Проверяем, нет ли уже такого параметра
+          const existingIndex = updatedBlock.action_params!.findIndex(p => p.variable === param.variable)
+          if (existingIndex !== -1) {
+            // Обновляем существующий параметр
+            updatedBlock.action_params![existingIndex] = param
+          } else {
+            // Добавляем новый параметр
+            updatedBlock.action_params!.push(param)
+          }
+        })
+      }
+      
+      // Рекурсивно обрабатываем дочерние блоки
+      if (block.children && block.children.length > 0) {
+        console.log(`  👶 Блок ${block.component_name} имеет ${block.children.length} детей`)
+        updatedBlock.children = block.children.map((child, childIndex) => {
+          const childId = `${blockIndex}.${childIndex}`
+          return applyDataToBlock(child, childId)
+        })
+      }
+      
+      return updatedBlock
+    } else {
+      console.log(`  ⚠️ Данные для блока ${block.component_name} (ID: ${blockIndex}) не найдены`)
+      
+      // Если данных нет, просто обрабатываем детей
+      if (block.children && block.children.length > 0) {
+        const updatedBlock = { ...block }
+        updatedBlock.children = block.children.map((child, childIndex) => {
+          const childId = `${blockIndex}.${childIndex}`
+          return applyDataToBlock(child, childId)
+        })
+        return updatedBlock
+      }
+      
+      return block
     }
-    
-    console.log(`    ⚠️ Нет обновлений для блока ${originalBlock.component_name} (${originalBlock.component_id})`)
-    return originalBlock
-  })
-  console.log('  🔄 Обновленная плоская структура:', JSON.stringify(updatedFlat, null, 2))
+  }
   
-  // Преобразуем обратно в дерево
-  const result = flatToTree(updatedFlat)
-  console.log('🏁 [applyBackendData] Финальное дерево:', JSON.stringify(result, null, 2))
+  const result = treeBlocks.map((block, index) => applyDataToBlock(block, index.toString()))
+  
+  console.log('🔄 [applyBackendData] Результат применения данных:', JSON.stringify(result, null, 2))
   
   return result
 } 

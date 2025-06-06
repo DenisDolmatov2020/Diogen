@@ -5,7 +5,19 @@
         <h3 class="text-lg font-semibold text-gray-800">{{ title }}</h3>
       </div>
       
-      <div class="info-body">
+      <!-- Показываем items, если есть -->
+      <div v-if="data.items && data.items.length > 0" class="info-body">
+        <div v-for="(item, index) in data.items" :key="index" class="info-item">
+          <span class="info-label">{{ item.title || getKeyLabel(item.variable) }}:</span>
+          <span class="info-value" :class="getItemStatusClass(item)">
+            {{ item.data || 'Не определено' }}
+            <span v-if="item.hidden_data" class="hidden-data" :title="item.hidden_data">💡</span>
+          </span>
+        </div>
+      </div>
+      
+      <!-- Fallback на старую логику, если items нет -->
+      <div v-else class="info-body">
         <div v-for="(item, index) in infoItems" :key="index" class="info-item">
           <span class="info-label">{{ item.label }}:</span>
           <span class="info-value">{{ item.value }}</span>
@@ -28,7 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { TreeBlock } from '@/types/block'
+import type { TreeBlock, Item } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock
@@ -66,6 +78,31 @@ const infoItems = computed(() => {
   
   return items
 })
+
+// Получение класса для статуса элемента
+function getItemStatusClass(item: Item): string[] {
+  const classes = []
+  
+  if (item.status) {
+    switch (item.status) {
+      case 'normal':
+        classes.push('status-normal')
+        break
+      case 'missed':
+        classes.push('status-missed')
+        break
+      case 'unprocessed':
+        classes.push('status-unprocessed')
+        break
+    }
+  }
+  
+  if (item.fate === 'editable') {
+    classes.push('fate-editable')
+  }
+  
+  return classes
+}
 
 function getKeyLabel(key: string): string {
   const labels: Record<string, string> = {
@@ -128,7 +165,28 @@ function getKeyValue(key: string, referenceId?: string): string {
 }
 
 .info-value {
-  @apply text-sm text-gray-900;
+  @apply text-sm text-gray-900 flex items-center gap-1;
+}
+
+/* Стили для статусов */
+.info-value.status-normal {
+  @apply text-green-700;
+}
+
+.info-value.status-missed {
+  @apply text-red-700;
+}
+
+.info-value.status-unprocessed {
+  @apply text-gray-500;
+}
+
+.info-value.fate-editable {
+  @apply font-medium;
+}
+
+.hidden-data {
+  @apply cursor-help text-blue-500;
 }
 
 /* Skeleton стили */

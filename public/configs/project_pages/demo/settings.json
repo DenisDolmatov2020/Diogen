@@ -1,0 +1,29 @@
+[
+  {
+    "component_name": "info_panel",
+    "action_mode": "deep_layout",
+    "action_params": [
+      {
+        "variable": "keys",
+        "data": [
+          "title",
+          "description"
+        ]
+      }
+    ],
+    "children": [
+      {
+        "component_name": "text_block",
+        "action_mode": "layout",
+        "action_params": [
+          {
+            "variable": "keys",
+            "data": [
+              "content"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

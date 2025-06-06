@@ -38,6 +38,7 @@ import ActionButton from '@/components/ui/ActionButton.vue'
 import InfoPanel from '@/components/ui/InfoPanel.vue'
 import ProgressBar from '@/components/ui/ProgressBar.vue'
 import TextBlock from '@/components/ui/TextBlock.vue'
+import MetaData from '@/components/ui/MetaData.vue'
 import UnknownComponent from '@/components/ui/UnknownComponent.vue'
 import type { TreeBlock } from '@/types/block'
 
@@ -58,7 +59,8 @@ const componentMap: Record<string, any> = {
   action_button: ActionButton,
   info_panel: InfoPanel,
   progress_bar: ProgressBar,
-  text_block: TextBlock
+  text_block: TextBlock,
+  meta_data: MetaData
 }
 
 function getComponent(componentName: string) {

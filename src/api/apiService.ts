@@ -175,25 +175,144 @@ class ApiService {
     return this.request<T>(url, { ...config, method: 'DELETE' })
   }
 
-  // Получение текущего токена (для отладки)
-  getAccessToken(): string | null {
-    return this.accessToken
-  }
 
-  // Принудительное обновление токена
-  async refreshToken(): Promise<void> {
-    this.accessToken = null
-    this.tokenExpiry = null
-    await this.authenticate()
-  }
-
-  // Проверка состояния API
-  async healthCheck(): Promise<boolean> {
+  // Универсальный метод для отправки запросов на create_answer_for_front_api
+  async sendRequest(payload: any): Promise<any> {
     try {
-      await this.get('/health')
-      return true
-    } catch {
-      return false
+      console.log('📤 Отправка запроса на create_answer_for_front_api:', payload)
+      
+      const response = await fetch('/api/create_answer_for_front_api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TOKEN': 'wYZj8hN91r7ggb33PDzGMPnOEZxEfQDRKDYuFG-JLwG0Dot8lZAhfHbXXg-C51wimX2oOd_s3JGYCCwN_FrjstjMNr_2uYLoYRfF8uY8rJWXFnI8SFUKx3lrTXOGLUnc'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const responseData = await response.json()
+      console.log('📥 Ответ сервера:', responseData)
+      
+      return responseData
+    } catch (error) {
+      console.error('❌ Ошибка при отправке запроса:', error)
+      throw error
+    }
+  }
+
+  // Метод для создания полного reference_id на сервере
+  async createFullReferenceId(partialReferenceId: string, inputData?: {
+    input_title?: string
+    input_text?: string
+    input_audio?: string
+    input_file?: string
+  }): Promise<string> {
+    try {
+      // Формируем action_params с переданными данными или значениями по умолчанию
+      const actionParams = [
+        {
+          variable: "input_title",
+          data: inputData?.input_title || ""
+        },
+        {
+          variable: "input_text", 
+          data: inputData?.input_text || ""
+        },
+        {
+          variable: "reference_id",
+          data: partialReferenceId
+        }
+      ]
+
+      // Добавляем опциональные поля, если они заполнены
+      if (inputData?.input_audio) {
+        actionParams.push({
+          variable: "input_audio",
+          data: inputData.input_audio
+        })
+      }
+
+      if (inputData?.input_file) {
+        actionParams.push({
+          variable: "input_file",
+          data: inputData.input_file
+        })
+      }
+
+      const payload = [{
+        action_mode: "processing",
+        action_params: actionParams,
+        component_id: "0",
+        component_name: "card_6_fields",
+        parent_block_id: "-reference_id-"
+      }]
+      
+      // Используем универсальный метод
+      const responseData = await this.sendRequest(payload)
+      
+      // Извлекаем полный reference_id из ответа
+      if (responseData && responseData.length > 0 && responseData[0].items && responseData[0].items.length > 0) {
+        const referenceIdItem = responseData[0].items.find((item: any) => 
+          item.meta && item.meta.variable === 'reference_id'
+        )
+        
+        if (referenceIdItem && referenceIdItem.meta && referenceIdItem.meta.data) {
+          const fullReferenceId = referenceIdItem.meta.data
+          console.log('✅ Получен полный reference_id:', fullReferenceId)
+          return fullReferenceId
+        }
+      }
+      
+      throw new Error('Не удалось извлечь reference_id из ответа сервера')
+    } catch (error) {
+      console.error('❌ Ошибка при создании полного reference_id:', error)
+      throw error
+    }
+  }
+
+  // Отправка обновленных данных компонентов (переписан для использования нового метода)
+  async sendUpdatedComponentData(projectId: string, referenceId: string, changedFields: Record<string, any>): Promise<any> {
+    // Формируем массив с meta_data компонентом и измененными полями
+    const payload = [
+      {
+        "component_name": "meta_data",
+        "action_mode": "processing",
+        "action_params": [
+          {
+            "variable": "reference_id",
+            "data": referenceId
+          },
+          // Добавляем все измененные поля
+          ...Object.entries(changedFields).map(([fieldName, value]) => ({
+            "variable": fieldName,
+            "data": value,
+            "action_mode": "processing"
+          }))
+        ]
+      }
+    ]
+    console.log('# Отправка обновленных данных:', projectId)
+    console.log('📤 Отправка обновленных данных:', payload)
+    
+    // Используем универсальный метод
+    return this.sendRequest(payload)
+  }
+
+  // Метод для объединения локальных изменений с компонентами
+  async saveComponentChanges(projectId: string, referenceId: string, changedFields: Record<string, any>): Promise<any> {
+    try {
+      // Отправляем только измененные данные
+      const result = await this.sendUpdatedComponentData(projectId, referenceId, changedFields)
+      
+      console.log('✅ Данные успешно сохранены:', result)
+      return result
+    } catch (error) {
+      console.error('❌ Ошибка при сохранении данных:', error)
+      throw error
     }
   }
 }

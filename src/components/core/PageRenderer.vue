@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { fetchFilledConfig, type LoadResult } from '@/api/pageApi'
 import BlockRenderer from './BlockRenderer.vue'
 import type { TreeBlock } from '@/types/block'
 import { injectReferenceId, treeToFlat } from '@/utils/dataTransform'
 import { apiService } from '@/api/apiService.ts'
 import { getCurrentReferenceId } from '@/utils/referenceIdManager'
+import { useChangesStore, type ChangeEntry } from '@/stores/changesStore'
 
 const props = defineProps<{
   configFile: string
@@ -23,6 +24,17 @@ const referenceId = ref<string>('')
 const hasChanges = ref(false)
 const isSaving = ref(false)
 const isSendingWithMeta = ref(false)
+
+// Computed для проверки изменений в store
+const hasStoreChanges = computed(() => {
+  const changesStore = useChangesStore()
+  return changesStore.changesCount > 0
+})
+
+const storeChangesCount = computed(() => {
+  const changesStore = useChangesStore()
+  return changesStore.changesCount
+})
 
 // Получаем reference_id из конфигурации
 function extractReferenceId(blocks: TreeBlock[]) {
@@ -235,6 +247,10 @@ async function saveChanges() {
       action_mode: "processing",
       action_params: [
         {
+          variable: "title",
+          data: "1"
+        },
+        {
           variable: "reference_id",
           data: referenceId.value
         }
@@ -283,9 +299,10 @@ async function sendWithMeta() {
     const originalTreeConfig: TreeBlock[] = await configResponse.json()
     console.log('📁 Загружен оригинальный конфиг:', originalTreeConfig)
     
-    // 2. Добавляем reference_id к конфигу
-    const configWithRefId = injectReferenceId(originalTreeConfig)
-    console.log('🔧 Конфиг с reference_id:', configWithRefId)
+    // 2. Получаем все изменения из store
+    const changesStore = useChangesStore()
+    const changes = changesStore.changes
+    console.log('📝 Изменения из store:', changes)
     
     // 3. Получаем текущий reference_id
     const currentRefId = getCurrentReferenceId()
@@ -293,34 +310,46 @@ async function sendWithMeta() {
       throw new Error('Не найден reference_id')
     }
     
-    // 4. Создаем мета-компонент
+    // 4. Создаем мета-компонент из изменений
     const metaComponent = {
       component_name: "meta_data",
+      parent_block_id: "-",
       action_mode: "processing",
       action_params: [
+        // Добавляем все изменения из store
+        ...changes.map((change: ChangeEntry) => ({
+          variable: change.field,
+          data: change.newValue,
+          action_mode: "processing"
+        })),
+        // Добавляем reference_id в конец
         {
           variable: "reference_id",
           data: currentRefId
-        },
-        {
-          variable: "aim",
-          data: "повторная обработка конфигурации",
-          action_mode: "processing"
         }
       ]
     }
     
     console.log('🏷️ Создан мета-компонент:', metaComponent)
     
-    // 5. Преобразуем дерево в плоскую структуру
+    // 5. Добавляем reference_id к конфигу
+    const configWithRefId = injectReferenceId(originalTreeConfig)
+    
+    // 6. Преобразуем дерево в плоскую структуру
     const flatConfig = treeToFlat(configWithRefId)
-    console.log('🔄 Плоская структура:', flatConfig)
     
-    // 6. Добавляем мета-компонент в начало плоского массива
-    const configWithMeta = [metaComponent, ...flatConfig]
-    console.log('🎯 Финальная структура для отправки:', configWithMeta)
+    // 7. Фильтруем конфиг - исключаем editable компоненты
+    const nonEditableConfig = flatConfig.filter(block => 
+      block.action_mode !== "editable_layout"
+    )
     
-    // 7. Отправляем на бэкенд (используем тот же endpoint что и при инициализации)
+    console.log('🔄 Неизменяемые компоненты:', nonEditableConfig)
+    
+    // 8. Формируем финальную структуру: мета-компонент + неизменяемые компоненты
+    const finalConfig = [metaComponent, ...nonEditableConfig]
+    console.log('🎯 Финальная структура для отправки:', finalConfig)
+    
+    // 9. Отправляем на бэкенд
     console.log('🚀 Отправляем на бэкенд...')
     const response = await fetch('https://di.slovo-soft.ru:6443/create_answer_for_front_api', {
       method: 'POST',
@@ -328,7 +357,7 @@ async function sendWithMeta() {
         'Content-Type': 'application/json',
         'X-TOKEN': 'wYZj8hN91r7ggb33PDzGMPnOEZxEfQDRKDYuFG-JLwG0Dot8lZAhfHbXXg-C51wimX2oOd_s3JGYCCwN_FrjstjMNr_2uYLoYRfF8uY8rJWXFnI8SFUKx3lrTXOGLUnc'
       },
-      body: JSON.stringify(configWithMeta)
+      body: JSON.stringify(finalConfig)
     })
     
     if (!response.ok) {
@@ -349,9 +378,15 @@ async function sendWithMeta() {
       source_mode: 'send_with_meta',
       payload: {
         metaComponent,
+        nonEditableConfig,
+        changesCount: changes.length,
         responseData
       }
     })
+    
+    // После успешной отправки очищаем изменения
+    changesStore.clearAllChanges()
+    console.log('🧹 Изменения очищены после успешной отправки')
     
   } catch (error) {
     console.error('❌ Ошибка при отправке с мета-компонентом:', error)
@@ -460,16 +495,18 @@ defineExpose({
         </transition>
         
         <!-- Кнопка отправки с мета -->
-        <div class="send-meta-button">
-          <button 
-            @click="sendWithMeta" 
-            :disabled="isSendingWithMeta"
-            class="meta-button"
-          >
-            <span v-if="isSendingWithMeta">📤 Отправка...</span>
-            <span v-else>📤 Отправить с мета</span>
-          </button>
-        </div>
+        <transition name="fade">
+          <div v-if="hasStoreChanges" class="send-meta-button">
+            <button 
+              @click="sendWithMeta" 
+              :disabled="isSendingWithMeta"
+              class="meta-button"
+            >
+              <span v-if="isSendingWithMeta">📤 Отправка...</span>
+              <span v-else>📤 Отправить с мета ({{ storeChangesCount }})</span>
+            </button>
+          </div>
+        </transition>
       </div>
     </div>
   </div>

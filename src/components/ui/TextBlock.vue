@@ -1,41 +1,97 @@
 <template>
   <div class="text-block-wrapper" :class="{ editable: isEditable, modified: isModified }">
-    <!-- Заголовок блока, если есть -->
-    <div v-if="getTitle()" class="text-block-title">
-      {{ getTitle() }}
-      <span v-if="isModified" class="modified-indicator">•</span>
-    </div>
-    
-    <!-- Редактируемое поле -->
-    <div v-if="isEditable" class="edit-field">
-      <!-- Многострочное поле -->
-      <textarea 
-        v-if="isMultiline"
-        v-model="editableValue"
-        :placeholder="getPlaceholder()"
-        class="editable-input multiline"
-        @input="handleInput"
-      ></textarea>
-      
-      <!-- Однострочное поле -->
-      <input 
-        v-else
-        type="text"
-        v-model="editableValue"
-        :placeholder="getPlaceholder()"
-        class="editable-input"
-        @input="handleInput"
-      />
-      
-      <!-- Лейбл поля, если есть -->
-      <div v-if="getLabel()" class="input-label">
-        {{ getLabel() }}
+    <!-- Если есть items, показываем их -->
+    <div v-if="data.items && data.items.length > 0" class="items-container">
+      <div v-for="(item, index) in data.items" :key="index" class="text-item" :class="getItemClass(item)">
+        <!-- Заголовок элемента -->
+        <div v-if="item.title" class="item-title">
+          {{ item.title }}
+          <span v-if="isItemModified(item)" class="modified-indicator">•</span>
+        </div>
+        
+        <!-- Редактируемое поле для editable элементов -->
+        <div v-if="item.fate === 'editable'" class="edit-field">
+          <!-- Многострочное поле -->
+          <textarea 
+            v-if="isItemMultiline(item)"
+            v-model="editableValues[item.variable]"
+            :placeholder="getItemPlaceholder(item)"
+            class="editable-input multiline"
+            @input="handleItemInput(item)"
+          ></textarea>
+          
+          <!-- Однострочное поле -->
+          <input 
+            v-else
+            type="text"
+            v-model="editableValues[item.variable]"
+            :placeholder="getItemPlaceholder(item)"
+            class="editable-input"
+            @input="handleItemInput(item)"
+          />
+        </div>
+        
+        <!-- Режим просмотра для readonly элементов -->
+        <div v-else class="text-content">
+          {{ item.data || 'Нет данных' }}
+        </div>
+        
+        <!-- Скрытые данные -->
+        <div v-if="item.hidden_data" class="item-hidden">
+          💡 {{ item.hidden_data }}
+        </div>
+        
+        <!-- Метаинформация -->
+        <div class="item-meta">
+          <span v-if="item.status" class="item-status" :class="getStatusClass(item.status)">
+            {{ getStatusText(item.status) }}
+          </span>
+          <span class="item-fate" :class="getFateClass(item.fate)">
+            {{ getFateText(item.fate) }}
+          </span>
+        </div>
       </div>
     </div>
     
-    <!-- Режим просмотра (не редактирования) -->
-    <div v-else class="text-content">
-      {{ getContent() }}
+    <!-- Fallback на старую логику, если items нет -->
+    <div v-else>
+      <!-- Заголовок блока, если есть -->
+      <div v-if="getTitle()" class="text-block-title">
+        {{ getTitle() }}
+        <span v-if="isModified" class="modified-indicator">•</span>
+      </div>
+      
+      <!-- Редактируемое поле -->
+      <div v-if="isEditable" class="edit-field">
+        <!-- Многострочное поле -->
+        <textarea 
+          v-if="isMultiline"
+          v-model="editableValue"
+          :placeholder="getPlaceholder()"
+          class="editable-input multiline"
+          @input="handleInput"
+        ></textarea>
+        
+        <!-- Однострочное поле -->
+        <input 
+          v-else
+          type="text"
+          v-model="editableValue"
+          :placeholder="getPlaceholder()"
+          class="editable-input"
+          @input="handleInput"
+        />
+        
+        <!-- Лейбл поля, если есть -->
+        <div v-if="getLabel()" class="input-label">
+          {{ getLabel() }}
+        </div>
+      </div>
+      
+      <!-- Режим просмотра (не редактирования) -->
+      <div v-else class="text-content">
+        {{ getContent() }}
+      </div>
     </div>
     
     <!-- Слот для дочерних элементов -->
@@ -44,8 +100,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import type { TreeBlock } from '@/types/block'
+import { ref, computed, onMounted, watch, reactive } from 'vue'
+import type { TreeBlock, Item } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock
@@ -56,12 +112,16 @@ const emit = defineEmits<{
   action: [data: any]
 }>()
 
-// Значение для редактирования
+// Значение для редактирования (старая логика)
 const editableValue = ref('')
 // Оригинальное значение (для сравнения изменений)
 const originalValue = ref('')
 // Флаг, указывающий, было ли поле изменено
 const isModified = ref(false)
+
+// Значения для редактирования items
+const editableValues = reactive<Record<string, string>>({})
+const originalValues = reactive<Record<string, string>>({})
 
 // Признак того, что это редактируемое поле
 const isEditable = computed(() => {
@@ -174,31 +234,121 @@ function handleInput() {
   isModified.value = editableValue.value !== originalValue.value
 }
 
-// Публичный метод для получения изменений (будет вызываться ActionButton)
-function getFieldChanges() {
-  if (isModified.value) {
-    return {
-      field: fieldKey.value,
-      value: editableValue.value,
-      originalValue: originalValue.value,
-      isModified: true
-    }
-  }
-  return null
-}
-
-// Сброс изменений к исходному значению
-function resetChanges() {
-  editableValue.value = originalValue.value
-  isModified.value = false
-}
-
-// Инициализация значения при монтировании
+// Инициализация значений для items
 onMounted(() => {
-  const content = getContent()
-  editableValue.value = content
-  originalValue.value = content
+  if (props.data.items) {
+    props.data.items.forEach(item => {
+      const value = item.data?.toString() || ''
+      editableValues[item.variable] = value
+      originalValues[item.variable] = value
+    })
+  }
 })
+
+// Получение класса для элемента
+function getItemClass(item: Item): string[] {
+  const classes = ['text-item']
+  
+  if (item.fate === 'editable') {
+    classes.push('item-editable')
+  }
+  
+  if (item.status === 'missed') {
+    classes.push('item-missed')
+  } else if (item.status === 'normal') {
+    classes.push('item-normal')
+  }
+  
+  return classes
+}
+
+// Проверка, изменен ли элемент
+function isItemModified(item: Item): boolean {
+  return editableValues[item.variable] !== originalValues[item.variable]
+}
+
+// Проверка, многострочное ли поле для элемента
+function isItemMultiline(item: Item): boolean {
+  const variable = item.variable.toLowerCase()
+  return variable.includes('description') || 
+         variable.includes('comment') || 
+         variable.includes('justification') ||
+         variable.includes('aim') ||
+         variable.includes('task') ||
+         variable.includes('relevance')
+}
+
+// Получение плейсхолдера для элемента
+function getItemPlaceholder(item: Item): string {
+  return `Введите ${item.title.toLowerCase()}`
+}
+
+// Обработчик изменения значения элемента
+function handleItemInput(item: Item) {
+  // Просто отмечаем изменение, не отправляем событие
+}
+
+// Получение класса для статуса
+function getStatusClass(status: string): string {
+  switch (status) {
+    case 'normal': return 'status-normal'
+    case 'missed': return 'status-missed'
+    case 'unprocessed': return 'status-unprocessed'
+    default: return 'status-default'
+  }
+}
+
+// Получение класса для fate
+function getFateClass(fate: string): string {
+  switch (fate) {
+    case 'editable': return 'fate-editable'
+    case 'readonly': return 'fate-readonly'
+    default: return 'fate-default'
+  }
+}
+
+// Получение текста для статуса
+function getStatusText(status: string): string {
+  switch (status) {
+    case 'normal': return 'Норма'
+    case 'missed': return 'Пропущено'
+    case 'unprocessed': return 'Не обработано'
+    default: return status
+  }
+}
+
+// Получение текста для fate
+function getFateText(fate: string): string {
+  switch (fate) {
+    case 'editable': return 'Редактируемое'
+    case 'readonly': return 'Только чтение'
+    default: return fate
+  }
+}
+
+// Публичный метод для получения изменений (обновленный для поддержки items)
+function getFieldChanges() {
+  let hasChanges = false
+  const changes: Record<string, any> = {}
+  
+  // Проверяем изменения в items
+  if (props.data.items) {
+    props.data.items.forEach(item => {
+      if (item.fate === 'editable' && isItemModified(item)) {
+        changes[item.variable] = editableValues[item.variable]
+        hasChanges = true
+      }
+    })
+  }
+  
+  // Проверяем изменения в старой логике
+  if (isModified.value) {
+    changes[fieldKey.value] = editableValue.value
+    hasChanges = true
+  }
+  
+  return hasChanges ? changes : null
+}
 
 // Обновляем редактируемое значение при изменении данных
 watch(() => props.data, () => {
@@ -211,65 +361,110 @@ watch(() => props.data, () => {
 // Экспортируем методы, чтобы к ним могли обращаться родительские компоненты
 defineExpose({
   getFieldChanges,
-  resetChanges,
   isModified: computed(() => isModified.value)
 })
 </script>
 
 <style scoped>
 .text-block-wrapper {
-  @apply w-full max-w-3xl mb-4 ml-2;
+  @apply bg-white border border-gray-200 rounded-lg p-3;
 }
 
-.text-block-title {
-  @apply text-lg font-medium mb-2 text-gray-700;
-  @apply flex items-center gap-2;
+.text-block-wrapper.editable {
+  @apply border-blue-300;
+}
+
+.text-block-wrapper.modified {
+  @apply border-orange-400 bg-orange-50;
+}
+
+/* Стили для items */
+.items-container {
+  @apply space-y-3;
+}
+
+.text-item {
+  @apply p-3 border border-gray-200 rounded bg-gray-50;
+}
+
+.text-item.item-editable {
+  @apply border-blue-300 bg-blue-50;
+}
+
+.text-item.item-missed {
+  @apply border-red-300 bg-red-50;
+}
+
+.text-item.item-normal {
+  @apply border-green-300 bg-green-50;
+}
+
+.item-title {
+  @apply font-medium text-gray-900 mb-2 flex items-center gap-2;
 }
 
 .modified-indicator {
-  @apply text-blue-500 font-bold text-xl;
-  animation: pulse 1.5s infinite;
-}
-
-.text-content {
-  @apply text-gray-600 whitespace-pre-line;
-}
-
-/* Стили для редактируемого режима */
-.editable {
-  @apply border border-gray-300 rounded-lg p-4 bg-white;
-  @apply transition-shadow duration-300;
-  @apply hover:shadow-md;
-}
-
-.editable.modified {
-  @apply border-blue-400 bg-blue-50;
+  @apply text-orange-500 font-bold;
 }
 
 .edit-field {
-  @apply relative;
+  @apply mb-2;
 }
 
 .editable-input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md;
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
-  @apply transition-colors duration-200;
-}
-
-.editable.modified .editable-input {
-  @apply border-blue-400;
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
 
 .editable-input.multiline {
   @apply min-h-[100px] resize-y;
 }
 
-.input-label {
-  @apply mt-1 text-xs text-gray-500;
+.text-content {
+  @apply text-gray-900 mb-2;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.item-hidden {
+  @apply text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mb-2;
+}
+
+.item-meta {
+  @apply flex gap-2 text-xs;
+}
+
+.item-status {
+  @apply px-2 py-1 rounded;
+}
+
+.status-normal {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-missed {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-unprocessed {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.item-fate {
+  @apply px-2 py-1 rounded;
+}
+
+.fate-editable {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.fate-readonly {
+  @apply bg-gray-100 text-gray-600;
+}
+
+/* Старые стили */
+.text-block-title {
+  @apply font-medium text-gray-900 mb-2 flex items-center gap-2;
+}
+
+.input-label {
+  @apply text-sm text-gray-600 mt-1;
 }
 </style>

@@ -13,7 +13,21 @@
         ></div>
       </div>
       
-      <div v-if="showDetails" class="progress-details">
+      <!-- Показываем items, если есть -->
+      <div v-if="data.items && data.items.length > 0" class="progress-items">
+        <div v-for="(item, index) in data.items" :key="index" class="progress-item">
+          <div class="item-info">
+            <span class="item-title">{{ item.title || getProgressLabel(item.variable) }}</span>
+            <span class="item-value">{{ item.data || 'Нет данных' }}</span>
+          </div>
+          <div v-if="item.hidden_data" class="item-hidden">
+            💡 {{ item.hidden_data }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Fallback детали, если items нет -->
+      <div v-else-if="showDetails" class="progress-details">
         <span class="text-sm text-gray-600">{{ currentValue }} из {{ maxValue }}</span>
       </div>
     </div>
@@ -34,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { TreeBlock } from '@/types/block'
+import type { TreeBlock, Item } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock
@@ -42,6 +56,12 @@ const props = defineProps<{
 }>()
 
 const label = computed(() => {
+  // Если есть items, берем заголовок первого элемента
+  if (props.data.items && props.data.items.length > 0) {
+    const firstItem = props.data.items[0]
+    return firstItem.title || getProgressLabel(firstItem.variable)
+  }
+  
   const keysParam = props.data.action_params?.find(p => p.variable === 'keys')
   if (keysParam?.data?.[0]) {
     return getProgressLabel(keysParam.data[0])
@@ -50,6 +70,20 @@ const label = computed(() => {
 })
 
 const currentValue = computed(() => {
+  // Если есть items, пытаемся получить числовое значение
+  if (props.data.items && props.data.items.length > 0) {
+    const firstItem = props.data.items[0]
+    if (typeof firstItem.data === 'number') {
+      return firstItem.data * 100 // Предполагаем, что данные в диапазоне 0-1
+    }
+    if (typeof firstItem.data === 'string') {
+      const parsed = parseFloat(firstItem.data)
+      if (!isNaN(parsed)) {
+        return parsed <= 1 ? parsed * 100 : parsed
+      }
+    }
+  }
+  
   // Имитируем текущее значение на основе reference_id
   const referenceParam = props.data.action_params?.find(p => p.variable === 'reference_id')
   if (referenceParam?.data) {
@@ -61,11 +95,11 @@ const currentValue = computed(() => {
 const maxValue = computed(() => 100)
 
 const percentage = computed(() => {
-  return Math.round((currentValue.value / maxValue.value) * 100)
+  return Math.round(Math.min(Math.max(currentValue.value, 0), 100))
 })
 
 const showDetails = computed(() => {
-  return props.data.action_mode === 'layout'
+  return props.data.action_mode === 'layout' && (!props.data.items || props.data.items.length === 0)
 })
 
 function getProgressLabel(key: string): string {
@@ -110,6 +144,31 @@ function getProgressLabel(key: string): string {
 
 .progress-details {
   @apply text-right;
+}
+
+/* Стили для items */
+.progress-items {
+  @apply mt-3 space-y-2;
+}
+
+.progress-item {
+  @apply p-2 bg-gray-50 rounded border border-gray-200;
+}
+
+.item-info {
+  @apply flex justify-between items-center;
+}
+
+.item-title {
+  @apply text-sm font-medium text-gray-700;
+}
+
+.item-value {
+  @apply text-sm text-gray-900 font-mono;
+}
+
+.item-hidden {
+  @apply text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-1;
 }
 
 /* Skeleton стили */

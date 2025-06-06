@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { getGeneratedRoutes } from '@/router/generatedRoutes'
 import { 
   getCurrentReferenceId, 
-  createNewReferenceId, 
-  parseReferenceId,
-  clearReferenceId 
+  parseReferenceId
 } from '@/utils/referenceIdManager'
 import { ref, onMounted } from 'vue'
+import ReferenceIdPanel from '@/components/core/ReferenceIdPanel.vue'
 
 // Получаем список всех доступных маршрутов для навигации
 const routes = getGeneratedRoutes()
@@ -20,26 +19,6 @@ const showRefIdPanel = ref(false)
 function loadCurrentReferenceId() {
   const refId = getCurrentReferenceId()
   currentRefId.value = refId || 'Не установлен'
-}
-
-// Создание нового reference_id
-function createNewRefId() {
-  const newRefId = createNewReferenceId()
-  currentRefId.value = newRefId
-  console.log('🆕 Создан новый reference_id:', newRefId)
-  
-  // Показываем уведомление
-  showNotification('Создан новый reference_id', 'success')
-}
-
-// Очистка reference_id
-function clearRefId() {
-  clearReferenceId()
-  currentRefId.value = 'Не установлен'
-  console.log('🗑️ reference_id очищен')
-  
-  // Показываем уведомление
-  showNotification('Reference ID очищен', 'success')
 }
 
 // Показ уведомления
@@ -68,6 +47,17 @@ function getParsedRefId() {
   return parseReferenceId(currentRefId.value)
 }
 
+// Обработчик обновления Reference ID из компонента
+function handleRefIdUpdated(newRefId: string) {
+  currentRefId.value = newRefId || 'Не установлен'
+  showNotification('Reference ID обновлен', 'success')
+}
+
+// Обработчик закрытия панели
+function handlePanelClose() {
+  showRefIdPanel.value = false
+}
+
 function getRouteLabel(routePath: string): string {
   // Преобразуем путь в человекочитаемое название
   // Сначала проверяем предопределенные метки
@@ -90,6 +80,8 @@ function getRouteLabel(routePath: string): string {
   return routePath // Возвращаем сам путь, если ничего не подошло
 }
 
+const route = useRoute()
+
 onMounted(() => {
   loadCurrentReferenceId()
 })
@@ -111,16 +103,19 @@ onMounted(() => {
           </div>
           
           <!-- Навигационные ссылки -->
-          <div class="nav-links">
-            <RouterLink 
-              v-for="routeItem in routes" 
-              :key="routeItem.route"
-              :to="routeItem.route" 
-              class="nav-link"
-              active-class="nav-link-active"
-            >
-              <span class="nav-link-text">{{ getRouteLabel(routeItem.route) }}</span>
-            </RouterLink>
+          <div class="ml-4 w-full flex justify-between">
+            <div class="nav-links">
+              <RouterLink
+                v-for="routeItem in routes"
+                :key="routeItem.route"
+                :to="routeItem.route"
+                class="nav-link"
+                active-class="nav-link-active"
+              >
+                <span class="nav-link-text">{{ getRouteLabel(routeItem.route) }}</span>
+              </RouterLink>
+            </div>
+
             
             <!-- Кнопка управления Reference ID -->
             <button 
@@ -128,61 +123,26 @@ onMounted(() => {
               class="nav-link ref-id-button"
               :class="{ 'ref-id-active': showRefIdPanel }"
             >
-              🆔 ID
+              🆔 <span class="ml-1">
+                  ID Form
+                  </span>
             </button>
           </div>
         </div>
       </nav>
     </header>
 
-    <!-- Reference ID панель -->
-    <div v-if="showRefIdPanel" class="ref-id-panel">
-      <div class="ref-id-content">
-        <div class="ref-id-header">
-          <h3>🆔 Reference ID Management</h3>
-          <button @click="showRefIdPanel = false" class="close-button">×</button>
-        </div>
-        
-        <div class="ref-id-info">
-          <div class="current-id">
-            <strong>Текущий ID:</strong>
-            <code class="id-display">{{ currentRefId }}</code>
-          </div>
-          
-          <div v-if="getParsedRefId()" class="id-breakdown">
-            <div class="breakdown-item">
-              <span class="label">Проект:</span>
-              <span class="value">{{ getParsedRefId()?.projectId }}</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="label">Пользователь:</span>
-              <span class="value">{{ getParsedRefId()?.userId }}</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="label">Timestamp:</span>
-              <span class="value">{{ getParsedRefId() ? new Date(getParsedRefId()!.timestamp * 1000).toLocaleString() : 'N/A' }}</span>
-            </div>
-          </div>
-          
-          <div class="ref-id-actions">
-            <button @click="createNewRefId" class="action-button primary">
-              🆕 Создать новый ID
-            </button>
-            <button @click="clearRefId" class="action-button secondary">
-              🗑️ Очистить ID
-            </button>
-            <button @click="loadCurrentReferenceId" class="action-button">
-              🔄 Обновить
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Reference ID панель как компонент -->
+    <ReferenceIdPanel
+      v-model="showRefIdPanel"
+      @close="handlePanelClose"
+      @ref-id-updated="handleRefIdUpdated"
+    />
 
     <!-- Основной контент -->
     <main class="main-content">
       <div class="content-wrapper">
-        <RouterView :key="$route.fullPath" />
+        <RouterView :key="route.fullPath" />
       </div>
     </main>
     
@@ -287,93 +247,6 @@ onMounted(() => {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
   border-color: rgba(16, 185, 129, 0.5) !important;
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
-}
-
-/* Reference ID панель */
-.ref-id-panel {
-  @apply fixed top-20 right-4 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-40;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.ref-id-content {
-  @apply p-4;
-}
-
-.ref-id-header {
-  @apply flex items-center justify-between mb-4 pb-2 border-b border-gray-200;
-}
-
-.ref-id-header h3 {
-  @apply text-lg font-semibold text-gray-800;
-}
-
-.close-button {
-  @apply text-gray-500 hover:text-gray-700 text-xl w-6 h-6 flex items-center justify-center rounded;
-  @apply hover:bg-gray-100 transition-colors;
-}
-
-.ref-id-info {
-  @apply space-y-4;
-}
-
-.current-id {
-  @apply flex flex-col gap-2;
-}
-
-.current-id strong {
-  @apply text-sm text-gray-700;
-}
-
-.id-display {
-  @apply bg-gray-100 px-3 py-2 rounded text-sm font-mono text-gray-800 break-all;
-}
-
-.id-breakdown {
-  @apply bg-blue-50 p-3 rounded-lg space-y-2;
-}
-
-.breakdown-item {
-  @apply flex justify-between text-sm;
-}
-
-.breakdown-item .label {
-  @apply text-gray-600 font-medium;
-}
-
-.breakdown-item .value {
-  @apply text-gray-800 font-mono;
-}
-
-.ref-id-actions {
-  @apply flex gap-2 flex-wrap;
-}
-
-.action-button {
-  @apply px-3 py-1.5 rounded text-sm font-medium transition-colors;
-  @apply border;
-}
-
-.action-button.primary {
-  @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700;
-}
-
-.action-button.secondary {
-  @apply bg-red-600 text-white border-red-600 hover:bg-red-700;
-}
-
-.action-button:not(.primary):not(.secondary) {
-  @apply bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200;
 }
 
 /* Основной контент */

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PageRenderer from './PageRenderer.vue'
+import ChangesViewer from '@/components/ui/ChangesViewer.vue'
 import type { TreeBlock } from '@/types/block'
 
 const route = useRoute()
@@ -257,6 +258,9 @@ onMounted(() => {
         @changes-saved="onChangesSaved"
       />
     </div>
+    
+    <!-- Независимый компонент изменений -->
+    <ChangesViewer />
   </div>
 </template>
 
@@ -268,8 +272,13 @@ onMounted(() => {
 
 /* Debug кнопка */
 .debug-toggle {
-  @apply fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors;
+  @apply fixed bottom-4 right-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow-xl;
+  @apply hover:from-blue-600 hover:to-indigo-600 transform hover:scale-105 transition-all duration-300;
+  @apply focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50;
   z-index: 1000;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 /* Debug панель - модальное окно */
@@ -404,21 +413,6 @@ onMounted(() => {
   @apply animate-fadeIn;
 }
 
-/* Анимации */
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out;
-}
-
 .action-info {
   @apply space-y-1 text-sm;
 }
@@ -441,5 +435,20 @@ onMounted(() => {
 
 .tree-stats li {
   @apply text-gray-600;
+}
+
+/* Анимации */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
 }
 </style> 
