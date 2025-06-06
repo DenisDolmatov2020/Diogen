@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import PageRenderer from './PageRenderer.vue'
 import ChangesViewer from '@/components/ui/ChangesViewer.vue'
 import type { TreeBlock } from '@/types/block'
+import { env, devLog, devError } from '@/utils/env'
 
 const route = useRoute()
 
@@ -18,7 +19,7 @@ const apiError = ref<string | null>(null)
 const showDebug = ref(false)
 
 // Показываем debug в dev режиме
-const isDev = computed(() => import.meta.env.DEV)
+const isDev = computed(() => env.devMode)
 
 const configPath = computed(() => {
   // Получаем путь к конфигу из мета-данных роута
@@ -76,7 +77,7 @@ const treeInfo = computed(() => {
 })
 
 function onDataLoaded(result: { data: TreeBlock[], isMockData: boolean, error?: string }) {
-  console.log('📊 Данные загружены в RoutePage:', result)
+  devLog('📊 Данные загружены в RoutePage:', result)
   loadedData.value = result.data
   isMockData.value = result.isMockData
   apiError.value = result.error || null
@@ -85,13 +86,13 @@ function onDataLoaded(result: { data: TreeBlock[], isMockData: boolean, error?: 
 }
 
 function onDataError(errorMessage: string) {
-  console.error('❌ Ошибка загрузки в RoutePage:', errorMessage)
+  devError('❌ Ошибка загрузки в RoutePage:', errorMessage)
   error.value = errorMessage
   loading.value = false
 }
 
 function handleAction(actionData: any) {
-  console.log('🎯 Action received in RoutePage:', actionData)
+  devLog('🎯 Action received in RoutePage:', actionData)
   lastAction.value = {
     timestamp: new Date().toISOString(),
     ...actionData
@@ -100,7 +101,7 @@ function handleAction(actionData: any) {
 }
 
 function retry() {
-  console.log('🔄 Повторная попытка загрузки')
+  devLog('🔄 Повторная попытка загрузки')
   loading.value = true
   error.value = null
 }
@@ -108,7 +109,7 @@ function retry() {
 // Отслеживаем изменения route.path
 watch(() => route.path, (newPath, oldPath) => {
   if (newPath !== oldPath) {
-    console.log(`🔄 Маршрут изменился с ${oldPath} на ${newPath}. Сбрасываем состояние...`)
+    devLog(`🔄 Маршрут изменился с ${oldPath} на ${newPath}. Сбрасываем состояние...`)
     loading.value = true
     error.value = null
     loadedData.value = null
@@ -130,13 +131,13 @@ function onChangesSaved(result: any) {
   
   // Отображаем данные в debug панели
   if (isDev.value && showDebug.value) {
-    console.log('✅ Изменения сохранены:', result)
+    devLog('✅ Изменения сохранены:', result)
   }
 }
 
 onMounted(() => {
-  console.log('🚀 RoutePage монтирован для пути:', route.path)
-  console.log('📁 Config path:', configPath.value)
+  devLog('🚀 RoutePage монтирован для пути:', route.path)
+  devLog('📁 Config path:', configPath.value)
 })
 </script>
 

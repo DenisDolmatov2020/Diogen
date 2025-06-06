@@ -10,6 +10,10 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  define: {
+    // Убеждаемся, что переменные окружения правильно доступны
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
+  },
   server: {
     proxy: {
       '/api': {

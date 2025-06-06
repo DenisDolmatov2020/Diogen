@@ -25,12 +25,6 @@ const hasChanges = ref(false)
 const isSaving = ref(false)
 const isSendingWithMeta = ref(false)
 
-// Computed для проверки изменений в store
-const hasStoreChanges = computed(() => {
-  const changesStore = useChangesStore()
-  return changesStore.changesCount > 0
-})
-
 const storeChangesCount = computed(() => {
   const changesStore = useChangesStore()
   return changesStore.changesCount
@@ -496,7 +490,7 @@ defineExpose({
         
         <!-- Кнопка отправки с мета -->
         <transition name="fade">
-          <div v-if="hasStoreChanges" class="send-meta-button">
+          <div class="send-meta-button">
             <button 
               @click="sendWithMeta" 
               :disabled="isSendingWithMeta"

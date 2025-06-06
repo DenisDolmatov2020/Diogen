@@ -1,18 +1,19 @@
 import { getGeneratedRoutes } from '@/router/generatedRoutes'
+import { env, devGroup } from '@/utils/env'
 
 export function logGeneratedRoutes() {
   const routes = getGeneratedRoutes()
   
-  console.group('🚀 Автоматически сгенерированные маршруты:')
-  routes.forEach(route => {
-    console.log(`📁 ${route.file} → 🌐 ${route.route}`)
+  devGroup('🚀 Автоматически сгенерированные маршруты:', () => {
+    routes.forEach(route => {
+      console.log(`📁 ${route.file} → 🌐 ${route.route}`)
+    })
   })
-  console.groupEnd()
   
   return routes
 }
 
 // Автоматически показываем маршруты в режиме разработки
-if (import.meta.env.DEV) {
+if (env.devMode) {
   logGeneratedRoutes()
 } 

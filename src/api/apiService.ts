@@ -1,3 +1,5 @@
+import { env, devLog, devWarn, devError } from '@/utils/env'
+
 interface AuthResponse {
   access_token: string
   token_type: string
@@ -26,11 +28,11 @@ class ApiService {
 
   constructor() {
     this.config = {
-      authUrl: import.meta.env.VITE_API_AUTH_URL || 'https://di.slovo-soft.ru:6443',
-      frontToken: import.meta.env.VITE_APP_FRONT_TOKEN || '123456',
-      basicLogin: import.meta.env.VITE_API_BASIC_LOGIN || 'slsuser',
-      basicPassword: import.meta.env.VITE_API_BASIC_PASSWORD || '',
-      loginEndpoint: import.meta.env.VITE_API_LOGIN_ENDPOINT || 'api/auth/token'
+      authUrl: env.api.authUrl,
+      frontToken: env.api.frontToken,
+      basicLogin: env.api.basicLogin,
+      basicPassword: env.api.basicPassword,
+      loginEndpoint: env.api.loginEndpoint
     }
   }
 
@@ -40,7 +42,7 @@ class ApiService {
       return // Токен ещё действителен (с запасом в 1 минуту)
     }
 
-    console.log('🔑 Получаем новый токен...')
+    devLog('🔑 Получаем новый токен...')
     await this.authenticate()
   }
 
@@ -64,9 +66,9 @@ class ApiService {
       this.accessToken = data.access_token
       this.tokenExpiry = Date.now() + (data.expires_in * 1000)
       
-      console.log('✅ Токен получен успешно')
+      devLog('✅ Токен получен успешно')
     } catch (error) {
-      console.error('❌ Ошибка аутентификации:', error)
+      devError('❌ Ошибка аутентификации:', error)
       throw new Error('Не удалось получить токен доступа')
     }
   }
@@ -120,7 +122,7 @@ class ApiService {
 
       // Обработка ошибки авторизации
       if (response.status === 401) {
-        console.warn('🔑 Токен истёк, обновляем...')
+        devWarn('🔑 Токен истёк, обновляем...')
         this.accessToken = null
         this.tokenExpiry = null
         
@@ -153,7 +155,7 @@ class ApiService {
       
       return response.text() as any
     } catch (error) {
-      console.error('❌ Ошибка API запроса:', error)
+      devError('❌ Ошибка API запроса:', error)
       throw error
     }
   }
@@ -179,7 +181,7 @@ class ApiService {
   // Универсальный метод для отправки запросов на create_answer_for_front_api
   async sendRequest(payload: any): Promise<any> {
     try {
-      console.log('📤 Отправка запроса на create_answer_for_front_api:', payload)
+      devLog('📤 Отправка запроса на create_answer_for_front_api:', payload)
       
       const response = await fetch('/api/create_answer_for_front_api', {
         method: 'POST',
@@ -195,11 +197,11 @@ class ApiService {
       }
       
       const responseData = await response.json()
-      console.log('📥 Ответ сервера:', responseData)
+      devLog('📥 Ответ сервера:', responseData)
       
       return responseData
     } catch (error) {
-      console.error('❌ Ошибка при отправке запроса:', error)
+      devError('❌ Ошибка при отправке запроса:', error)
       throw error
     }
   }
@@ -262,14 +264,14 @@ class ApiService {
         
         if (referenceIdItem && referenceIdItem.meta && referenceIdItem.meta.data) {
           const fullReferenceId = referenceIdItem.meta.data
-          console.log('✅ Получен полный reference_id:', fullReferenceId)
+          devLog('✅ Получен полный reference_id:', fullReferenceId)
           return fullReferenceId
         }
       }
       
       throw new Error('Не удалось извлечь reference_id из ответа сервера')
     } catch (error) {
-      console.error('❌ Ошибка при создании полного reference_id:', error)
+      devError('❌ Ошибка при создании полного reference_id:', error)
       throw error
     }
   }
@@ -295,8 +297,8 @@ class ApiService {
         ]
       }
     ]
-    console.log('# Отправка обновленных данных:', projectId)
-    console.log('📤 Отправка обновленных данных:', payload)
+    devLog('# Отправка обновленных данных:', projectId)
+    devLog('📤 Отправка обновленных данных:', payload)
     
     // Используем универсальный метод
     return this.sendRequest(payload)
@@ -308,10 +310,10 @@ class ApiService {
       // Отправляем только измененные данные
       const result = await this.sendUpdatedComponentData(projectId, referenceId, changedFields)
       
-      console.log('✅ Данные успешно сохранены:', result)
+      devLog('✅ Данные успешно сохранены:', result)
       return result
     } catch (error) {
-      console.error('❌ Ошибка при сохранении данных:', error)
+      devError('❌ Ошибка при сохранении данных:', error)
       throw error
     }
   }

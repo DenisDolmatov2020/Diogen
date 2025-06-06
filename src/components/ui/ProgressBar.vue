@@ -18,7 +18,7 @@
         <div v-for="(item, index) in data.items" :key="index" class="progress-item">
           <div class="item-info">
             <span class="item-title">{{ item.title || getProgressLabel(item.variable) }}</span>
-            <span class="item-value">{{ item.data || 'Нет данных' }}</span>
+            <span class="item-value">{{ formatProgressValue(item.data) }}</span>
           </div>
           <div v-if="item.hidden_data" class="item-hidden">
             💡 {{ item.hidden_data }}
@@ -73,9 +73,21 @@ const currentValue = computed(() => {
   // Если есть items, пытаемся получить числовое значение
   if (props.data.items && props.data.items.length > 0) {
     const firstItem = props.data.items[0]
-    if (typeof firstItem.data === 'number') {
-      return firstItem.data * 100 // Предполагаем, что данные в диапазоне 0-1
+    
+    // Проверяем, если data - это объект с полями value и max
+    if (typeof firstItem.data === 'object' && firstItem.data !== null) {
+      if ('value' in firstItem.data && 'max' in firstItem.data) {
+        const progressData = firstItem.data as { value: number; max: number }
+        return (progressData.value / progressData.max) * 100
+      }
     }
+    
+    // Если data - число
+    if (typeof firstItem.data === 'number') {
+      return firstItem.data <= 1 ? firstItem.data * 100 : firstItem.data
+    }
+    
+    // Если data - строка, пытаемся распарсить
     if (typeof firstItem.data === 'string') {
       const parsed = parseFloat(firstItem.data)
       if (!isNaN(parsed)) {
@@ -84,7 +96,7 @@ const currentValue = computed(() => {
     }
   }
   
-  // Имитируем текущее значение на основе reference_id
+  // Fallback: имитируем текущее значение на основе reference_id
   const referenceParam = props.data.action_params?.find(p => p.variable === 'reference_id')
   if (referenceParam?.data) {
     return 75 // Если есть reference_id, показываем прогресс
@@ -110,6 +122,30 @@ function getProgressLabel(key: string): string {
   }
   
   return labels[key] || 'Прогресс'
+}
+
+function formatProgressValue(data: any): string {
+  // Если data - объект с value и max
+  if (typeof data === 'object' && data !== null && 'value' in data && 'max' in data) {
+    const progressData = data as { value: number; max: number }
+    const percentage = (progressData.value / progressData.max) * 100
+    return `${percentage.toFixed(1)}% (${progressData.value.toFixed(3)}/${progressData.max})`
+  }
+  
+  // Если data - число
+  if (typeof data === 'number') {
+    if (data <= 1) {
+      return `${(data * 100).toFixed(1)}%`
+    }
+    return data.toString()
+  }
+  
+  // Если data - строка
+  if (typeof data === 'string') {
+    return data
+  }
+  
+  return 'Нет данных'
 }
 </script>
 
