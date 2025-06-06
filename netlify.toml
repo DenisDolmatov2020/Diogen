@@ -16,7 +16,7 @@
 # Редирект для SPA
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/test/backend_integration"
   status = 200
 
 # Заголовки для всех запросов

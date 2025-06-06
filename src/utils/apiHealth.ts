@@ -1,4 +1,4 @@
-import { env, devLog, devWarn, devError } from '@/utils/env'
+import { env, devLog, devError } from '@/utils/env'
 
 export interface ApiHealthStatus {
   isOnline: boolean
@@ -19,7 +19,7 @@ export async function checkApiHealth(): Promise<ApiHealthStatus> {
       ? '/api' 
       : '/api'
     
-    const response = await fetch(healthCheckUrl, {
+    await fetch(healthCheckUrl, {
       method: 'HEAD',
       headers: {
         'Content-Type': 'application/json'

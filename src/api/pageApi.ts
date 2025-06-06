@@ -136,7 +136,7 @@ function generateMockTreeData(treeConfig: TreeBlock[]): TreeBlock[] {
       "items": [
         {
           "title": "Прогресс выполнения",
-          "data": "75",
+          "data": "15",
           "variable": "19009",
           "fate": "readonly"
         }

@@ -99,7 +99,7 @@ const currentValue = computed(() => {
   // Fallback: имитируем текущее значение на основе reference_id
   const referenceParam = props.data.action_params?.find(p => p.variable === 'reference_id')
   if (referenceParam?.data) {
-    return 75 // Если есть reference_id, показываем прогресс
+    return 1  // Если есть reference_id, показываем прогресс
   }
   return 0
 })
