@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import './utils/debugRoutes'
 import './utils/envTest'
+import './utils/apiHealth'
 
 const app = createApp(App)
 const pinia = createPinia()

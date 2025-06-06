@@ -1,0 +1,2 @@
+/api/* https://di.slovo-soft.ru:6443/:splat 200
+/* /index.html 200 

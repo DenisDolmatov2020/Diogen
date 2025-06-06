@@ -183,7 +183,15 @@ class ApiService {
     try {
       devLog('📤 Отправка запроса на create_answer_for_front_api:', payload)
       
-      const response = await fetch('/api/create_answer_for_front_api', {
+      // Определяем URL в зависимости от окружения
+      const apiUrl = env.devMode 
+        ? '/api/create_answer_for_front_api'  // Для разработки - используем прокси
+        : '/api/create_answer_for_front_api'  // Для production - используем Netlify редирект
+      
+      devLog('🌐 Используем API URL:', apiUrl)
+      devLog('🔧 Режим разработки:', env.devMode)
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -192,8 +200,17 @@ class ApiService {
         body: JSON.stringify(payload)
       })
       
+      devLog('📊 Статус ответа:', response.status)
+      devLog('📊 URL запроса:', response.url)
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        devError('❌ HTTP ошибка:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries())
+        })
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
       }
       
       const responseData = await response.json()
@@ -202,6 +219,17 @@ class ApiService {
       return responseData
     } catch (error) {
       devError('❌ Ошибка при отправке запроса:', error)
+      
+      // Дополнительная диагностика для production
+      if (!env.devMode) {
+        console.error('🚨 Production API Error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        })
+      }
+      
       throw error
     }
   }
