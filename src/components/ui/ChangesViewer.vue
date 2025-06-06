@@ -219,7 +219,7 @@ const saveChanges = () => {
 
 /* Фиксированная кнопка изменений */
 .changes-toggle {
-  @apply fixed top-20 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-xl;
+  @apply fixed bottom-20 left-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-xl;
   @apply hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-300;
   @apply focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-opacity-50;
   z-index: 1000;
@@ -582,7 +582,7 @@ const saveChanges = () => {
 
 @keyframes slideInUp {
   from {
-    transform: translateY(-100%) scale(0.8);
+    transform: translateY(100%) scale(0.8);
     opacity: 0;
   }
   to {

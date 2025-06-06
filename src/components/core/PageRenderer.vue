@@ -503,7 +503,7 @@ defineExpose({
               class="meta-button"
             >
               <span v-if="isSendingWithMeta">📤 Отправка...</span>
-              <span v-else>📤 Отправить с мета ({{ storeChangesCount }})</span>
+              <span v-else>📤 Отправить с изменениями ({{ storeChangesCount }})</span>
             </button>
           </div>
         </transition>
@@ -598,7 +598,7 @@ defineExpose({
 
 /* Контейнер для кнопок действий */
 .action-buttons-container {
-  @apply fixed bottom-6 left-6 z-50 flex flex-col gap-3;
+  @apply fixed bottom-4 left-4 z-50 flex flex-col gap-3;
 }
 
 /* Кнопка сохранения изменений */

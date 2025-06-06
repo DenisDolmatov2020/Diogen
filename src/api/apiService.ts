@@ -26,9 +26,9 @@ class ApiService {
 
   constructor() {
     this.config = {
-      authUrl: import.meta.env.VITE_API_AUTH_URL,
-      frontToken: import.meta.env.VITE_APP_FRONT_TOKEN,
-      basicLogin: import.meta.env.VITE_API_BASIC_LOGIN,
+      authUrl: import.meta.env.VITE_API_AUTH_URL || 'https://di.slovo-soft.ru:6443',
+      frontToken: import.meta.env.VITE_APP_FRONT_TOKEN || '123456',
+      basicLogin: import.meta.env.VITE_API_BASIC_LOGIN || 'slsuser',
       basicPassword: import.meta.env.VITE_API_BASIC_PASSWORD,
       loginEndpoint: import.meta.env.VITE_API_LOGIN_ENDPOINT
     }
