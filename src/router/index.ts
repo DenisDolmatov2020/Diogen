@@ -7,7 +7,7 @@ const router = createRouter({
     // Главная страница - редирект на список статей
     {
       path: '/',
-      redirect: '/article/list'
+      redirect: '/test/backend_integration'
     },
     // Автоматически сгенерированные маршруты из JSON-конфигов
     ...buildRoutes()

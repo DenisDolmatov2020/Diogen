@@ -10,8 +10,7 @@
 ```
 src/configs/project_pages/
 ├── article/
-│   ├── list.json          → /article/list
-│   └── [id].json          → /article/:id
+
 └── order/
     └── new.json           → /order/new
 ```

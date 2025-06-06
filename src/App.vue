@@ -55,9 +55,8 @@ function getRouteLabel(routePath: string): string {
   // Преобразуем путь в человекочитаемое название
   // Сначала проверяем предопределенные метки
   const predefinedLabels: Record<string, string> = {
-    '/article/list': '📄 Статьи',
-    '/order/detail': '📋 Заказы',
-    '/test/backend_integration': '🔧 Тест API'
+    '/test/backend_integration': '🔧 Тест API',
+    '/demo/settings': 'Настройки'
     // Добавьте другие метки по мере необходимости
   }
   if (predefinedLabels[routePath]) {
