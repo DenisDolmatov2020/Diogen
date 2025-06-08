@@ -4,7 +4,6 @@ import type { RouteRecordRaw } from 'vue-router'
 // Обновляется вручную при добавлении новых страниц
 const configFiles = [
   '/configs/project_pages/test/backend_integration.json',
-  '/configs/project_pages/demo/settings.json'
   // Добавляйте новые конфиги здесь
 ]
 
@@ -35,8 +34,22 @@ export function buildRoutes(): RouteRecordRaw[] {
 
 // Для отладки - показать все сгенерированные маршруты
 export function getGeneratedRoutes() {
-  return configFiles.map(configPath => ({
+  const configRoutes = configFiles.map(configPath => ({
     file: configPath,
     route: fsPathToRoutePath(configPath)
   }))
+  
+  // Добавляем маршрут чата
+  configRoutes.push({
+    file: 'chat',
+    route: '/chat'
+  })
+  
+  // Добавляем маршрут Reference ID Manager
+  configRoutes.push({
+    file: 'reference-id-manager',
+    route: '/reference-id'
+  })
+  
+  return configRoutes
 } 
