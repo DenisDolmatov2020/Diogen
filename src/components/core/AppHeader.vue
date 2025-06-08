@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { getGeneratedRoutes } from '@/router/generatedRoutes'
 import { 
   getCurrentReferenceId 
 } from '@/utils/referenceIdManager'
 import { ref, onMounted } from 'vue'
-import ReferenceIdPanel from '@/components/core/ReferenceIdPanel.vue'
 
 // Получаем список всех доступных маршрутов для навигации
 const routes = getGeneratedRoutes()
 
 // Состояние для reference_id
 const currentRefId = ref<string>('')
-const showRefIdPanel = ref(false)
 const isHeaderVisible = ref(false)
 
 // Загрузка текущего reference_id
@@ -41,17 +39,6 @@ function showNotification(message: string, type: 'success' | 'error' = 'success'
   }, 3000)
 }
 
-// Обработчик обновления Reference ID из компонента
-function handleRefIdUpdated(newRefId: string) {
-  currentRefId.value = newRefId || 'Не установлен'
-  showNotification('Reference ID обновлен', 'success')
-}
-
-// Обработчик закрытия панели
-function handlePanelClose() {
-  showRefIdPanel.value = false
-}
-
 // Показать header
 function showHeader() {
   isHeaderVisible.value = true
@@ -60,7 +47,6 @@ function showHeader() {
 // Скрыть header
 function hideHeader() {
   isHeaderVisible.value = false
-  showRefIdPanel.value = false
 }
 
 function getRouteLabel(routePath: string): string {
@@ -68,7 +54,8 @@ function getRouteLabel(routePath: string): string {
     '/test/backend_integration': '🔧  Тест API',
     '/demo/settings': 'Настройки',
     '/chat': '💬  Чат-бот',
-    '/demo/input': '📝  Интерактивный ввод'
+    '/demo/input': '📝  Интерактивный ввод',
+    '/reference-id': '🆔  ID Manager'
   }
   if (predefinedLabels[routePath]) {
     return predefinedLabels[routePath]
@@ -89,10 +76,6 @@ onMounted(() => {
 
 <template>
   <div class="header-container">
-    <svg width="22" height="20" viewBox="0 0 22 20" fill="b" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2.24862 0.249944C1.42319 -0.144342 0.516337 0.609944 0.752051 1.49366L2.48005 7.95051C2.52336 8.11279 2.61338 8.25877 2.73895 8.37032C2.86452 8.48186 3.02009 8.55406 3.18634 8.57794L11.6583 9.78823C11.9035 9.82252 11.9035 10.1774 11.6583 10.2125L3.18719 11.4219C3.02094 11.4458 2.86537 11.518 2.73981 11.6296C2.61424 11.7411 2.52421 11.8871 2.48091 12.0494L0.752051 18.5097C0.516337 19.3925 1.42319 20.1468 2.24862 19.7534L20.6755 10.9685C21.4889 10.5811 21.4889 9.42223 20.6755 9.03394L2.24862 0.249944Z" fill="#9CA3AF"/>
-    </svg>
-
     <!-- Кнопка показа меню -->
     <div 
       class="menu-trigger"
@@ -139,26 +122,10 @@ onMounted(() => {
                 <span class="nav-link-text">{{ getRouteLabel(routeItem.route) }}</span>
               </RouterLink>
             </div>
-
-            <!-- Кнопка управления Reference ID -->
-            <button 
-              @click="showRefIdPanel = !showRefIdPanel"
-              class="nav-link ref-id-button"
-              :class="{ 'ref-id-active': showRefIdPanel }"
-            >
-              🆔 <span class="ml-1">ID Form</span>
-            </button>
           </div>
         </div>
       </nav>
     </header>
-
-    <!-- Reference ID панель как компонент -->
-    <ReferenceIdPanel
-      v-model="showRefIdPanel"
-      @close="handlePanelClose"
-      @ref-id-updated="handleRefIdUpdated"
-    />
   </div>
 </template>
 
@@ -174,7 +141,7 @@ onMounted(() => {
 /* Кнопка показа меню */
 .menu-trigger {
   position: absolute;
-  left: 50%;
+  right: 0;
   transform: translateX(-50%);
   z-index: 1001;
   
@@ -199,7 +166,7 @@ onMounted(() => {
 
 .menu-trigger:hover {
   opacity: 1;
-  transform: translateX(-50%) translateY(2px);
+  transform: translateX(-50%);
   box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
 }
 
@@ -418,27 +385,6 @@ onMounted(() => {
 .nav-link-text {
   position: relative;
   z-index: 2;
-}
-
-/* Reference ID кнопка */
-.ref-id-button {
-  cursor: pointer;
-  background: rgba(16, 185, 129, 0.1) !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
-  color: #10b981;
-}
-
-.ref-id-button:hover {
-  background: rgba(16, 185, 129, 0.2) !important;
-  border-color: rgba(16, 185, 129, 0.5) !important;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
-}
-
-.ref-id-active {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  border-color: rgba(16, 185, 129, 0.6) !important;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
 }
 
 /* Адаптивность */
