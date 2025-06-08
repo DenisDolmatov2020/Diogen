@@ -8,7 +8,7 @@
       <!-- Показываем items, если есть -->
       <div v-if="data.items && data.items.length > 0" class="info-body">
         <div v-for="(item, index) in data.items" :key="index" class="info-item">
-          <span class="info-label">{{ item.title || getKeyLabel(item.variable) }}:</span>
+          <span class="info-label">{{ item.title || getKeyLabel(item.variable || '') }}:</span>
           <span class="info-value" :class="getItemStatusClass(item)">
             {{ item.data || 'Не определено' }}
             <span v-if="item.hidden_data" class="hidden-data" :title="item.hidden_data">💡</span>

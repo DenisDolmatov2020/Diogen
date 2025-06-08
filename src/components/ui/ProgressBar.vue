@@ -17,7 +17,7 @@
       <div v-if="data.items && data.items.length > 0" class="progress-items">
         <div v-for="(item, index) in data.items" :key="index" class="progress-item">
           <div class="item-info">
-            <span class="item-title">{{ item.title || getProgressLabel(item.variable) }}</span>
+            <span class="item-title">{{ item.title || getProgressLabel(item.variable || '') }}</span>
             <span class="item-value">{{ formatProgressValue(item.data) }}</span>
           </div>
           <div v-if="item.hidden_data" class="item-hidden">

@@ -608,7 +608,7 @@ defineExpose({
 
 /* Кнопка отправки с мета */
 .send-meta-button {
-  @apply w-full;
+  @apply max-w-[320px];
 }
 
 .meta-button {
