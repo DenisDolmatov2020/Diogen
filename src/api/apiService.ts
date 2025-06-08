@@ -345,6 +345,168 @@ class ApiService {
       throw error
     }
   }
+
+  // Специальный метод для чат-бота
+  async sendChatMessage(message: string, referenceId?: string, keys?: string[]): Promise<any> {
+    try {
+      devLog('💬 Отправка сообщения чат-боту:', { message, referenceId, keys })
+      
+      // Формируем запрос в новом формате
+      const payload = [
+        {
+          "component_name": "meta_data",
+          "parent_block_id": "block-0-1",
+          "action_mode": "dialog",
+          "action_params": [
+            {
+              "variable": "input_text",
+              "data": message
+            },
+            {
+              "variable": "keys",
+              "data": keys || []
+            },
+            {
+              "variable": "reference_id",
+              "data": referenceId || `000.${Date.now()}.${Math.floor(Date.now() / 1000)}t`
+            }
+          ]
+        }
+      ]
+      
+      // В режиме разработки используем мок-данные
+      if (env.devMode) {
+        devLog('🔧 Режим разработки: используем мок-данные')
+        
+        // Импортируем мок-данные
+        const mockResponses = await import('./chatMockResponses.json')
+        
+        // Имитируем задержку сети
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200))
+        
+        // Умная логика выбора ответа
+        let selectedResponse = mockResponses.default.responses.capabilities // По умолчанию capabilities
+        
+        // Если есть ключи от кнопок, используем их для выбора ответа
+        if (keys && keys.length > 0) {
+          const key = keys[0]
+          devLog('🔍 Анализируем ключ кнопки:', key)
+          // Простой анализ по ключевым словам в title кнопки
+          const keywordMap: Record<string, string> = {
+            'capabilities': 'capabilities',
+            'возможности': 'capabilities',
+            'project': 'project_help',
+            'проект': 'project_help',
+            'помощь': 'project_help',
+            'tech': 'tech_support',
+            'техническая': 'tech_support',
+            'поддержка': 'tech_support',
+            'gallery': 'gallery_demo',
+            'галерея': 'gallery_demo',
+            'analytics': 'analytics_demo',
+            'анализ': 'analytics_demo',
+            'эффективность': 'analytics_demo',
+            'ai': 'ai_showcase',
+            'ии': 'ai_showcase',
+            'искусственный': 'ai_showcase',
+            'нейрон': 'ai_showcase',
+            'error': 'error_demo',
+            'ошибка': 'error_demo',
+            'котик': 'real_backend_examples',
+            'грант': 'real_backend_examples',
+            'сказка': 'real_backend_examples'
+          }
+          
+          const lowerKey = key.toLowerCase()
+          for (const [keyword, responseKey] of Object.entries(keywordMap)) {
+            if (lowerKey.includes(keyword)) {
+              selectedResponse = mockResponses.default.responses[responseKey as keyof typeof mockResponses.default.responses] || selectedResponse
+              devLog(`✅ Найден ответ по ключу "${keyword}": ${responseKey}`)
+              break
+            }
+          }
+        } else {
+          // Анализируем текст сообщения для выбора подходящего ответа
+          const lowerMessage = message.toLowerCase()
+          devLog('🔍 Анализируем сообщение:', lowerMessage)
+          
+          if (lowerMessage.includes('возможност') || lowerMessage.includes('умеешь') || lowerMessage.includes('можешь')) {
+            selectedResponse = mockResponses.default.responses.capabilities
+          } else if (lowerMessage.includes('проект') || lowerMessage.includes('помощь') || lowerMessage.includes('разработк')) {
+            selectedResponse = mockResponses.default.responses.project_help
+          } else if (lowerMessage.includes('ошибк') || lowerMessage.includes('проблем') || lowerMessage.includes('поддержк')) {
+            selectedResponse = mockResponses.default.responses.tech_support
+          } else if (lowerMessage.includes('галере') || lowerMessage.includes('картин') || lowerMessage.includes('изображен') || lowerMessage.includes('фото')) {
+            selectedResponse = mockResponses.default.responses.gallery_demo
+          } else if (lowerMessage.includes('аналитик') || lowerMessage.includes('статистик') || lowerMessage.includes('метрик') || lowerMessage.includes('данн')) {
+            selectedResponse = mockResponses.default.responses.analytics_demo
+          } else if (lowerMessage.includes('ии') || lowerMessage.includes('искусственн') || lowerMessage.includes('нейрон') || lowerMessage.includes('машинн') || lowerMessage.includes('ai') || lowerMessage.includes('ml')) {
+            selectedResponse = mockResponses.default.responses.ai_showcase
+          } else if (lowerMessage.includes('котик') || lowerMessage.includes('кот') || lowerMessage.includes('грант') || lowerMessage.includes('сказк')) {
+            selectedResponse = mockResponses.default.responses.real_backend_examples
+          } else if (lowerMessage.includes('ошибк') && lowerMessage.includes('демо')) {
+            selectedResponse = mockResponses.default.responses.error_demo
+          } else {
+            // Иногда показываем реальные примеры от бэкенда для разнообразия
+            const shouldShowRealExamples = Math.random() < 0.3
+            if (shouldShowRealExamples) {
+              selectedResponse = mockResponses.default.responses.real_backend_examples
+            } else {
+              // Случайный выбор из основных ответов
+              const responseKeys = ['capabilities', 'project_help', 'tech_support', 'gallery_demo', 'analytics_demo', 'ai_showcase']
+              const randomKey = responseKeys[Math.floor(Math.random() * responseKeys.length)]
+              selectedResponse = mockResponses.default.responses[randomKey as keyof typeof mockResponses.default.responses]
+            }
+          }
+        }
+        
+        // Создаем копию выбранного ответа
+        const mockData = JSON.parse(JSON.stringify(selectedResponse))
+        
+        // Добавляем персонализацию в текстовые блоки (только если это не реальные примеры от бэкенда)
+        if (selectedResponse !== mockResponses.default.responses.real_backend_examples) {
+          mockData.forEach((component: any) => {
+            if (component.component_name === 'text_block') {
+              component.items.forEach((item: any) => {
+                if (item.data && typeof item.data === 'string') {
+                  // Добавляем упоминание исходного сообщения пользователя
+                  if (!keys || keys.length === 0) {
+                    item.data = `Отвечаю на ваш вопрос: "${message}"\n\n${item.data}`
+                  }
+                }
+              })
+            }
+          })
+        }
+        
+        devLog('🤖 Выбран мок-ответ, компонентов:', mockData.length)
+        return mockData
+      }
+      
+      const response = await this.sendRequest(payload)
+      
+      devLog('🤖 Ответ сервера:', response)
+      return response
+      
+    } catch (error) {
+      devError('❌ Ошибка при отправке сообщения чат-боту:', error)
+      
+      // В случае ошибки возвращаем базовый мок-ответ
+      return [
+        {
+          "component_name": "text_block",
+          "parent_block_id": "block-0-0",
+          "items": [
+            {
+              "title": "Ошибка",
+              "data": "Извините, произошла ошибка. Попробуйте еще раз.",
+              "status": "missed"
+            }
+          ]
+        }
+      ]
+    }
+  }
 }
 
 // Экспортируем единственный экземпляр

@@ -1,8 +1,22 @@
 <template>
   <div class="action-button-container" :class="buttonId">
-    <!-- Основная кнопка -->
+    <!-- Для чата: отображаем все items как отдельные кнопки -->
+    <div v-if="!skeleton && data.items && data.items.length > 0" class="chat-buttons">
+      <button
+        v-for="(item, index) in data.items"
+        :key="index"
+        @click="handleItemClick(item)"
+        :disabled="loading"
+        class="chat-action-button"
+      >
+        <span v-if="loading" class="animate-spin mr-2">⟳</span>
+        {{ item.title }}
+      </button>
+    </div>
+    
+    <!-- Fallback: основная кнопка для других случаев -->
     <button
-      v-if="!skeleton"
+      v-else-if="!skeleton"
       @click="handleClick"
       :disabled="loading"
       :class="buttonClasses"
@@ -13,76 +27,6 @@
     
     <!-- Skeleton состояние -->
     <div v-else class="skeleton-button"></div>
-    
-    <!-- Показываем items, если есть -->
-    <div v-if="data.items && data.items.length > 0" class="items-list">
-      <div v-for="(item, index) in data.items" :key="index" class="item-row" :class="getItemRowClass(item)">
-        <div class="item-content">
-          <div class="item-title">
-            {{ item.title }}
-            <span v-if="isItemChanged(item)" class="changed-indicator">•</span>
-          </div>
-          <div v-if="item.data !== undefined && item.data !== ''" class="item-data">
-            {{ item.data }}
-          </div>
-          
-          <!-- Редактируемое поле hidden_data -->
-          <div v-if="item.fate === 'editable'" class="item-editable">
-            <!-- Режим просмотра -->
-            <div v-if="!isEditing(item)" class="view-mode">
-              <div class="item-hidden">
-                💡 {{ getDisplayValue(item) || 'Нет данных' }}
-              </div>
-              <button 
-                @click="startEditing(item)" 
-                class="edit-button"
-                title="Редактировать"
-              >
-                ✏️ Редактировать
-              </button>
-            </div>
-            
-            <!-- Режим редактирования -->
-            <div v-else class="edit-mode">
-              <textarea 
-                v-model="editingValues[item.variable]"
-                class="edit-textarea"
-                :placeholder="'Введите значение для ' + item.title"
-                rows="3"
-              ></textarea>
-              <div class="edit-buttons">
-                <button 
-                  @click="saveItemChange(item)" 
-                  class="save-button"
-                >
-                  💾 Сохранить
-                </button>
-                <button 
-                  @click="cancelEditing(item)" 
-                  class="cancel-button"
-                >
-                  ❌ Отмена
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Readonly поле hidden_data -->
-          <div v-else-if="item.hidden_data" class="item-hidden readonly">
-            💡 {{ item.hidden_data }}
-          </div>
-        </div>
-        
-        <div class="item-meta">
-          <span v-if="item.status" class="item-status" :class="getStatusClass(item.status)">
-            {{ getStatusText(item.status) }}
-          </span>
-          <span v-if="item.fate" class="item-fate" :class="getFateClass(item.fate)">
-            {{ getFateText(item.fate) }}
-          </span>
-        </div>
-      </div>
-    </div>
     
     <!-- Дочерние элементы -->
     <slot />
@@ -100,7 +44,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  action: [data: { type: string; payload: any }]
+  action: [data: { type: string; payload: any; blockData?: any }]
 }>()
 
 const loading = ref(false)
@@ -148,55 +92,64 @@ const buttonClasses = computed(() => {
   return baseClasses
 })
 
-// Получение класса для строки элемента
-function getItemRowClass(item: Item): string[] {
-  const classes = ['item-row']
+const getItemRowClass = computed(() => (item: Item) => {
+  const classes = []
   
-  if (item.status === 'missed') {
+  if (item.status === 'processed') {
+    classes.push('item-processed')
+  } else if (item.status === 'missed') {
     classes.push('item-missed')
-  } else if (item.status === 'normal') {
-    classes.push('item-normal')
   } else if (item.status === 'unprocessed') {
     classes.push('item-unprocessed')
   }
   
   return classes
-}
+})
+
+const getItemTitleClass = computed(() => (item: Item) => {
+  const classes = ['item-title']
+  
+  if (item.status === 'processed') {
+    classes.push('title-processed')
+  } else if (item.status === 'missed') {
+    classes.push('title-missed')
+  } else if (item.status === 'unprocessed') {
+    classes.push('title-unprocessed')
+  }
+  
+  return classes.join(' ')
+})
 
 // Получение класса для статуса
 function getStatusClass(status: string): string {
-  switch (status) {
-    case 'normal': return 'status-normal'
-    case 'missed': return 'status-missed'
-    case 'unprocessed': return 'status-unprocessed'
-    default: return 'status-default'
-  }
+  return status === 'missed' ? 'status-missed' : 
+         status === 'normal' ? 'status-normal' : 
+         status === 'unprocessed' ? 'status-unprocessed' : ''
 }
 
 // Получение класса для fate
 function getFateClass(fate: string): string {
-  switch (fate) {
-    case 'editable': return 'fate-editable'
-    case 'readonly': return 'fate-readonly'
-    default: return 'fate-default'
-  }
+  return fate === 'active' ? 'fate-active' : 
+         fate === 'completed' ? 'fate-completed' : 
+         fate === 'pending' ? 'fate-pending' : ''
 }
 
-// Получение текста для статуса
+// Получение текста статуса  
 function getStatusText(status: string): string {
   switch (status) {
-    case 'normal': return 'Норма'
     case 'missed': return 'Пропущено'
-    case 'unprocessed': return 'Не обработано'
+    case 'normal': return 'Готово'
+    case 'unprocessed': return 'В процессе'
     default: return status
   }
 }
 
-// Получение текста для fate
+// Получение текста fate
 function getFateText(fate: string): string {
   switch (fate) {
-    case 'editable': return 'Редактируемое'
-    case 'readonly': return 'Только чтение'
+    case 'active': return 'Активно'
+    case 'completed': return 'Завершено'
+    case 'pending': return 'Ожидает'
     default: return fate
   }
 }
@@ -215,23 +168,29 @@ function getButtonLabel(key: string): string {
 
 // Проверка, редактируется ли элемент
 function isEditing(item: Item): boolean {
-  return editingStates[item.variable] || false
+  return !!item.variable && editingStates[item.variable]
 }
 
 // Начать редактирование элемента
 function startEditing(item: Item) {
-  editingStates[item.variable] = true
-  editingValues[item.variable] = item.hidden_data || ''
+  if (item.variable) {
+    editingStates[item.variable] = true
+    editingValues[item.variable] = item.hidden_data || ''
+  }
 }
 
 // Отменить редактирование
 function cancelEditing(item: Item) {
-  editingStates[item.variable] = false
-  delete editingValues[item.variable]
+  if (item.variable) {
+    editingStates[item.variable] = false
+    delete editingValues[item.variable]
+  }
 }
 
 // Сохранить изменения элемента
 function saveItemChange(item: Item) {
+  if (!item.variable) return
+  
   const newValue = editingValues[item.variable]
   const originalValue = item.hidden_data
   
@@ -253,23 +212,18 @@ function saveItemChange(item: Item) {
 
 // Получить отображаемое значение для элемента
 function getDisplayValue(item: Item): string {
-  const blockId = props.data.components_id || props.data.component_name || 'unknown'
-  const itemIndex = props.data.items?.indexOf(item) || 0
-  
-  // Проверяем, есть ли изменение в store
-  const changes = changesStore.getChangesByBlock(blockId)
-  const change = changes.find(c => c.itemIndex === itemIndex && c.field === item.variable)
-  
-  if (change) {
-    return change.newValue
+  if (typeof item.data === 'string') {
+    return item.data
+  } else if (typeof item.data === 'object' && item.data !== null) {
+    return item.data.text || item.data.title || String(item.data)
   }
-  
-  // Иначе возвращаем исходное значение
-  return item.hidden_data || ''
+  return String(item.data || '')
 }
 
 // Проверка, изменен ли элемент
 function isItemChanged(item: Item): boolean {
+  if (!item.variable) return false
+  
   const blockId = props.data.components_id || props.data.component_name || 'unknown'
   const itemIndex = props.data.items?.indexOf(item) || 0
   
@@ -393,16 +347,86 @@ function getVueComponent(el: Element): any {
 
 // Добавляем уникальный класс компоненту для легкого поиска
 const buttonId = `action-button-${props.data.component_name || Math.random().toString(36).substring(2, 9)}`
+
+// Новый метод для обработки кликов по кнопкам из items
+function handleItemClick(item: Item) {
+  console.log('🎯 Клик по кнопке из items:', item)
+  
+  emit('action', {
+    type: 'button_click',
+    payload: {
+      title: item.title,
+      data: item.data,
+      status: item.status,
+      ...(item.variable && { variable: item.variable })
+    },
+    blockData: {
+      items: [item],
+      component_name: props.data.component_name
+    }
+  })
+}
 </script>
 
 <style scoped>
 .action-button-container {
-  @apply flex flex-col gap-2 p-2 w-full max-w-2xl;
+  @apply flex flex-col gap-2 w-full;
+}
+
+/* Стили для кнопок чата */
+.chat-buttons {
+  @apply flex flex-wrap gap-3;
+}
+
+.chat-action-button {
+  @apply w-full text-sm font-medium transition-colors border-0;
+  min-width: 67px;
+  gap: 12px;
+  border-radius: 50px;
+  padding: 14px 22px;
+  background: var(--desktop-surface-background-blue, #33AFE1);
+  color: white;
+  font-family: 'Golos Text', system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.chat-action-button:hover {
+  background: #2A9BC7;
+}
+
+.chat-action-button:focus {
+  @apply outline-none;
+  box-shadow: 0 0 0 2px rgba(51, 175, 225, 0.3);
+}
+
+.chat-action-button:active {
+  @apply transform scale-95;
+}
+
+.chat-action-button:disabled {
+  @apply opacity-50 cursor-not-allowed;
 }
 
 .skeleton-button {
   @apply h-10 bg-gray-300 rounded-lg animate-pulse;
   width: 120px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chat-buttons {
+    @apply flex-col;
+    gap: 8px;
+  }
+  
+  .chat-action-button {
+    @apply w-full justify-center;
+    padding: 12px 18px;
+    font-size: 14px;
+  }
 }
 
 /* Стили для списка элементов */
