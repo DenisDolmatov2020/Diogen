@@ -4,39 +4,28 @@ import { getGeneratedRoutes } from '@/router/generatedRoutes'
 import { 
   getCurrentReferenceId 
 } from '@/utils/referenceIdManager'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 // Получаем список всех доступных маршрутов для навигации
 const routes = getGeneratedRoutes()
+
+// Получаем текущий маршрут
+const route = useRoute()
 
 // Состояние для reference_id
 const currentRefId = ref<string>('')
 const isHeaderVisible = ref(false)
 
+// Проверяем, нужно ли скрывать кнопку меню
+const shouldShowMenuButton = computed(() => {
+  return !route.query.hideMenuIcon
+})
+
 // Загрузка текущего reference_id
 function loadCurrentReferenceId() {
   const refId = getCurrentReferenceId()
   currentRefId.value = refId || 'Не установлен'
-}
-
-// Показ уведомления
-function showNotification(message: string, type: 'success' | 'error' = 'success') {
-  const notification = document.createElement('div')
-  notification.className = `notification ${type}`
-  notification.textContent = message
-  
-  document.body.appendChild(notification)
-  
-  setTimeout(() => {
-    notification.classList.add('show')
-  }, 10)
-  
-  setTimeout(() => {
-    notification.classList.add('fade-out')
-    setTimeout(() => {
-      document.body.removeChild(notification)
-    }, 500)
-  }, 3000)
 }
 
 // Показать header
@@ -78,6 +67,7 @@ onMounted(() => {
   <div class="header-container">
     <!-- Кнопка показа меню -->
     <div 
+      v-if="shouldShowMenuButton"
       class="menu-trigger"
       @mouseenter="showHeader"
       :class="{ 'trigger-active': isHeaderVisible }"
@@ -134,15 +124,15 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  z-index: 1000;
+  z-index: 100;
+  max-width: 100%;
 }
 
 /* Кнопка показа меню */
 .menu-trigger {
   position: absolute;
-  right: 0;
-  transform: translateX(-50%);
+  left: -20px;
+  transform: translateX(50%);
   z-index: 1001;
   
   display: flex;
@@ -224,12 +214,15 @@ onMounted(() => {
 
 /* Основной header */
 .header {
+  max-width: 50vw;
+  min-width: 360px;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.96) 100%);
   backdrop-filter: blur(25px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   
   transform: translateY(-100%);
+  transform-origin: top right;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   
   border-radius: 0 0 24px 24px;
@@ -252,7 +245,7 @@ onMounted(() => {
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 16px 24px;
 }
@@ -289,8 +282,8 @@ onMounted(() => {
 }
 
 .logo-text {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 650;
   background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #fb7185 100%);
   background-clip: text;
   -webkit-background-clip: text;
@@ -311,11 +304,11 @@ onMounted(() => {
 }
 
 .logo-subtitle {
-  font-size: 10px;
+  font-size: 8px;
   color: #94a3b8;
   font-weight: 400;
-  letter-spacing: 1px;
-  margin-top: 2px;
+  letter-spacing: .8px;
+  margin-top: 1px;
   text-transform: uppercase;
 }
 
