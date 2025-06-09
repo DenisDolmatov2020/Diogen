@@ -65,20 +65,7 @@ onMounted(() => {
 
 <template>
   <div class="header-container">
-    <!-- Кнопка показа меню -->
-    <div 
-      v-if="shouldShowMenuButton"
-      class="menu-trigger"
-      @mouseenter="showHeader"
-      :class="{ 'trigger-active': isHeaderVisible }"
-    >
-      <div class="trigger-icon">
-        <div class="trigger-line"></div>
-        <div class="trigger-line"></div>
-        <div class="trigger-line"></div>
-      </div>
-      <div class="trigger-text">меню</div>
-    </div>
+†
 
     <!-- Основной header -->
     <header 

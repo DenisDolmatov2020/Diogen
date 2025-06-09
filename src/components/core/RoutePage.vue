@@ -18,6 +18,12 @@ const apiError = ref<string | null>(null)
 // Debug панель
 const showDebug = ref(false)
 
+// Состояние для iframe
+const isIframeOpen = ref(false)
+
+// Состояние для полноэкранного режима
+const isFullscreen = ref(false)
+
 // Показываем debug в dev режиме
 const isDev = computed(() => env.devMode)
 
@@ -135,6 +141,22 @@ function onChangesSaved(result: any) {
   }
 }
 
+// Функция для переключения iframe
+function toggleIframe() {
+  isIframeOpen.value = !isIframeOpen.value
+}
+
+// Закрытие iframe при клике вне его
+function closeIframe() {
+  isIframeOpen.value = false
+  isFullscreen.value = false
+}
+
+// Переключение полноэкранного режима
+function toggleFullscreen() {
+  isFullscreen.value = !isFullscreen.value
+}
+
 onMounted(() => {
   devLog('🚀 RoutePage монтирован для пути:', route.path)
   devLog('📁 Config path:', configPath.value)
@@ -150,6 +172,17 @@ onMounted(() => {
       @click="showDebug = !showDebug"
     >
       👁️ Debug Info
+    </button>
+
+    <!-- Кнопка для открытия iframe -->
+    <button
+      @click="toggleIframe"
+      class="iframe-toggle-button"
+      :class="{ 'active': isIframeOpen }"
+    >
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.99984 24L4.93317 27.0666C4.51095 27.4888 4.0274 27.5835 3.48251 27.3506C2.93762 27.1177 2.66562 26.7008 2.66651 26.1V5.33329C2.66651 4.59996 2.92784 3.9724 3.45051 3.45063C3.97317 2.92885 4.60073 2.66751 5.33317 2.66663H26.6665C27.3998 2.66663 28.0278 2.92796 28.5505 3.45063C29.0732 3.97329 29.3341 4.60085 29.3332 5.33329V21.3333C29.3332 22.0666 29.0723 22.6946 28.5505 23.2173C28.0287 23.74 27.4007 24.0008 26.6665 24H7.99984ZM9.33317 18.6666H17.3332C17.711 18.6666 18.0278 18.5386 18.2838 18.2826C18.5398 18.0266 18.6674 17.7102 18.6665 17.3333C18.6656 16.9564 18.5376 16.64 18.2825 16.384C18.0274 16.128 17.711 16 17.3332 16H9.33317C8.95539 16 8.63895 16.128 8.38384 16.384C8.12873 16.64 8.00073 16.9564 7.99984 17.3333C7.99895 17.7102 8.12695 18.0271 8.38384 18.284C8.64073 18.5408 8.95717 18.6684 9.33317 18.6666ZM9.33317 14.6666H22.6665C23.0443 14.6666 23.3612 14.5386 23.6172 14.2826C23.8732 14.0266 24.0007 13.7102 23.9998 13.3333C23.999 12.9564 23.871 12.64 23.6158 12.384C23.3607 12.128 23.0443 12 22.6665 12H9.33317C8.95539 12 8.63895 12.128 8.38384 12.384C8.12873 12.64 8.00073 12.9564 7.99984 13.3333C7.99895 13.7102 8.12695 14.0271 8.38384 14.284C8.64073 14.5408 8.95717 14.6684 9.33317 14.6666ZM9.33317 10.6666H22.6665C23.0443 10.6666 23.3612 10.5386 23.6172 10.2826C23.8732 10.0266 24.0007 9.71018 23.9998 9.33329C23.999 8.9564 23.871 8.63996 23.6158 8.38396C23.3607 8.12796 23.0443 7.99996 22.6665 7.99996H9.33317C8.95539 7.99996 8.63895 8.12796 8.38384 8.38396C8.12873 8.63996 8.00073 8.9564 7.99984 9.33329C7.99895 9.71018 8.12695 10.0271 8.38384 10.284C8.64073 10.5408 8.95717 10.6684 9.33317 10.6666Z" fill="white"/>
+      </svg>
     </button>
 
     <!-- Debug панель (только в dev режиме) -->
@@ -221,6 +254,40 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Модальное окно с iframe -->
+    <Transition name="iframe-modal">
+      <div v-if="isIframeOpen" class="iframe-modal-overlay" @click="closeIframe">
+        <div class="iframe-modal" @click.stop :class="{ 'fullscreen': isFullscreen }">
+          <div class="iframe-header">
+            <h3 class="iframe-title">Чат-бот</h3>
+            <div class="iframe-controls">
+              <button @click="toggleFullscreen" class="iframe-fullscreen-button" :title="isFullscreen ? 'Свернуть' : 'На весь экран'">
+                <svg v-if="!isFullscreen" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 3H7V5H5V7H3V3ZM17 3V7H15V5H13V3H17ZM17 17H13V15H15V13H17V17ZM7 17V15H5V13H3V17H7Z" fill="currentColor"/>
+                </svg>
+                <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 5H9V7H7V9H5V5ZM15 5V9H13V7H11V5H15ZM15 15H11V13H13V11H15V15ZM9 15V13H7V11H5V15H9Z" fill="currentColor"/>
+                </svg>
+              </button>
+              <button @click="closeIframe" class="iframe-close-button">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <iframe 
+            src="http://localhost:5179/chat?hideMenuIcon=true"
+            width="508"
+            height="552"
+            frameborder="0"
+            class="iframe-content"
+            title="Чат-бот"
+          ></iframe>
+        </div>
+      </div>
+    </Transition>
+
     <div v-if="loading" class="loading-state">
       <div class="loading-card">
         <div class="loading-icon">⚡</div>
@@ -280,6 +347,149 @@ onMounted(() => {
   padding: 12px 16px;
   font-weight: 600;
   font-size: 14px;
+}
+
+/* Кнопка для iframe */
+.iframe-toggle-button {
+  @apply fixed bottom-20 right-4 w-14 h-14 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center;
+  background-color: #33AFE1; /* Голубой цвет */
+  z-index: 1000;
+}
+
+.iframe-toggle-button:hover {
+  background-color: #2A9BC7; /* Немного темнее для hover */
+}
+
+.iframe-toggle-button:focus {
+  @apply outline-none ring-2 ring-offset-2;
+  ring-color: #33AFE1;
+}
+
+.iframe-toggle-button.active {
+  @apply bg-gray-500;
+}
+
+.iframe-toggle-button.active:hover {
+  @apply bg-gray-600;
+}
+
+.iframe-toggle-button:hover {
+  @apply transform scale-105;
+}
+
+/* Модальное окно с iframe */
+.iframe-modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-end justify-end;
+  z-index: 1001;
+  padding: 20px; /* Отступ от краёв экрана */
+}
+
+.iframe-modal {
+  @apply bg-white rounded-lg shadow-2xl overflow-hidden transition-all duration-300;
+  width: 528px; /* 508px + padding */
+  height: 592px; /* 552px + header */
+  margin-top: 80px; /* Отступ снизу чтобы не перекрывать кнопки */
+  transform-origin: bottom right; /* Анимация начинается от правого нижнего угла */
+}
+
+.iframe-modal.fullscreen {
+  @apply inset-4 z-[1000];
+  width: calc(100vw - 32px);
+  height: calc(100vh - 32px);
+  margin: 0;
+  border-radius: 12px;
+  transform-origin: bottom right; /* Сохраняем точку трансформации */
+}
+
+.iframe-header {
+  @apply flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200;
+}
+
+.iframe-title {
+  @apply font-semibold text-gray-800 m-0;
+  font-size: 18px;
+  font-family: 'Golos Text', system-ui, -apple-system, sans-serif;
+}
+
+.iframe-controls {
+  @apply flex items-center gap-2;
+}
+
+.iframe-fullscreen-button {
+  @apply text-gray-500 hover:text-gray-700 transition-colors p-1 rounded;
+}
+
+.iframe-fullscreen-button:focus {
+  @apply outline-none ring-2 ring-blue-300;
+}
+
+.iframe-close-button {
+  @apply text-gray-500 hover:text-gray-700 transition-colors p-1 rounded;
+}
+
+.iframe-close-button:focus {
+  @apply outline-none ring-2 ring-blue-300;
+}
+
+.iframe-content {
+  @apply w-full border-0;
+  height: 552px;
+}
+
+.iframe-modal.fullscreen .iframe-content {
+  height: calc(100% - 60px); /* Вычитаем высоту заголовка */
+}
+
+/* Анимации для модального окна */
+.iframe-modal-enter-active,
+.iframe-modal-leave-active {
+  @apply transition-all duration-300;
+}
+
+.iframe-modal-enter-from,
+.iframe-modal-leave-to {
+  @apply opacity-0;
+}
+
+.iframe-modal-enter-from .iframe-modal,
+.iframe-modal-leave-to .iframe-modal {
+  @apply transform scale-95;
+}
+
+.iframe-modal-enter-to,
+.iframe-modal-leave-from {
+  @apply opacity-100;
+}
+
+.iframe-modal-enter-to .iframe-modal,
+.iframe-modal-leave-from .iframe-modal {
+  @apply transform scale-100;
+}
+
+/* Адаптивность для модального окна */
+@media (max-width: 640px) {
+  .iframe-modal-overlay {
+    @apply items-center justify-center;
+    padding: 16px;
+  }
+  
+  .iframe-modal {
+    @apply mx-0;
+    width: calc(100vw - 32px);
+    max-width: 528px;
+    height: 80vh;
+    max-height: 592px;
+    margin-bottom: 0;
+  }
+  
+  .iframe-content {
+    height: calc(80vh - 60px);
+    max-height: 552px;
+  }
+  
+  .iframe-toggle-button {
+    @apply bottom-24 right-4;
+  }
 }
 
 /* Debug панель - модальное окно */

@@ -1,62 +1,51 @@
-import { getOrCreateReferenceId } from './referenceIdManager'
 import type { TreeBlock, FlatBlock } from '@/types/block'
+import { getOrCreateReferenceId } from '@/utils/referenceIdManager'
 
 /**
  * Автоматически заменяет все reference_id в конфиге на динамически сгенерированный
  * и добавляет reference_id к блокам, у которых его нет
  */
 export function injectReferenceId(treeBlocks: TreeBlock[]): TreeBlock[] {
-  const currentReferenceId = getOrCreateReferenceId()
+  const referenceId = getOrCreateReferenceId()
   
-  console.log('🔧 [injectReferenceId] Внедряем reference_id:', currentReferenceId)
+  console.log('🔧 [injectReferenceId] Внедряем reference_id:', referenceId)
   
-  function updateReferenceIdRecursive(blocks: TreeBlock[]): TreeBlock[] {
-    return blocks.map(block => {
-      console.log(`  🔍 Обрабатываем блок: ${block.component_name}`)
-      
-      // Создаем копию блока
-      const updatedBlock: TreeBlock = {
-        ...block,
-        action_params: [...block.action_params]
-      }
-      
-      // Ищем существующий reference_id
-      let hasReferenceId = false
+  return treeBlocks.map(block => {
+    const updatedBlock: TreeBlock = {
+      ...block,
+      action_params: block.action_params ? [...block.action_params] : []
+    }
+    
+    // Заменяем статический reference_id на динамический
+    if (updatedBlock.action_params) {
       updatedBlock.action_params = updatedBlock.action_params.map(param => {
         if (param.variable === 'reference_id') {
-          hasReferenceId = true
-          console.log(`    🔄 Заменяем reference_id: ${param.data} → ${currentReferenceId}`)
+          console.log(`    🔄 Заменяем reference_id: ${param.data} → ${referenceId}`)
           return {
             ...param,
-            data: currentReferenceId
+            data: referenceId
           }
         }
         return param
       })
-      
-      // Если reference_id нет, добавляем его
-      if (!hasReferenceId) {
-        console.log(`    ➕ Добавляем reference_id: ${currentReferenceId}`)
-        updatedBlock.action_params.push({
-          variable: 'reference_id',
-          data: currentReferenceId
-        })
-      }
-      
-      // Рекурсивно обрабатываем дочерние блоки
-      if (block.children && block.children.length > 0) {
-        console.log(`    👶 Обрабатываем ${block.children.length} дочерних блоков`)
-        updatedBlock.children = updateReferenceIdRecursive(block.children)
-      }
-      
-      return updatedBlock
-    })
-  }
-  
-  const result = updateReferenceIdRecursive(treeBlocks)
-  console.log('✅ [injectReferenceId] reference_id успешно внедрен во все блоки')
-  
-  return result
+    }
+    
+    // Если reference_id нет, добавляем его
+    if (!updatedBlock.action_params || updatedBlock.action_params.length === 0) {
+      console.log(`    ➕ Добавляем reference_id: ${referenceId}`)
+      updatedBlock.action_params = [{
+        variable: 'reference_id',
+        data: referenceId
+      }]
+    }
+    
+    // Рекурсивно обрабатываем дочерние блоки
+    if (block.children) {
+      updatedBlock.children = injectReferenceId(block.children)
+    }
+    
+    return updatedBlock
+  })
 }
 
 /**
