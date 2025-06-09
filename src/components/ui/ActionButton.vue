@@ -34,9 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { computed, ref } from 'vue'
 import type { TreeBlock, Item } from '@/types/block'
-import { useChangesStore } from '@/stores/changesStore'
 
 const props = defineProps<{
   data: TreeBlock
@@ -48,12 +47,6 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
-const changesStore = useChangesStore()
-
-// Состояние редактирования для каждого элемента
-const editingStates = reactive<Record<string, boolean>>({})
-// Временные значения для редактирования
-const editingValues = reactive<Record<string, string>>({})
 
 const buttonText = computed(() => {
   // Если есть items, берем заголовок первого элемента
@@ -92,54 +85,6 @@ const buttonClasses = computed(() => {
   return baseClasses
 })
 
-const getItemTitleClass = computed(() => (item: Item) => {
-  const classes = ['item-title']
-  
-  if (item.status === 'processed') {
-    classes.push('title-processed')
-  } else if (item.status === 'missed') {
-    classes.push('title-missed')
-  } else if (item.status === 'unprocessed') {
-    classes.push('title-unprocessed')
-  }
-  
-  return classes.join(' ')
-})
-
-// Получение класса для статуса
-function getStatusClass(status: string): string {
-  return status === 'missed' ? 'status-missed' : 
-         status === 'normal' ? 'status-normal' : 
-         status === 'unprocessed' ? 'status-unprocessed' : ''
-}
-
-// Получение класса для fate
-function getFateClass(fate: string): string {
-  return fate === 'active' ? 'fate-active' : 
-         fate === 'completed' ? 'fate-completed' : 
-         fate === 'pending' ? 'fate-pending' : ''
-}
-
-// Получение текста статуса  
-function getStatusText(status: string): string {
-  switch (status) {
-    case 'missed': return 'Пропущено'
-    case 'normal': return 'Готово'
-    case 'unprocessed': return 'В процессе'
-    default: return status
-  }
-}
-
-// Получение текста fate
-function getFateText(fate: string): string {
-  switch (fate) {
-    case 'active': return 'Активно'
-    case 'completed': return 'Завершено'
-    case 'pending': return 'Ожидает'
-    default: return fate
-  }
-}
-
 function getButtonLabel(key: string): string {
   // Маппинг ключей на человекочитаемые названия
   const labels: Record<string, string> = {
@@ -150,73 +95,6 @@ function getButtonLabel(key: string): string {
   }
   
   return labels[key] || key
-}
-
-// Проверка, редактируется ли элемент
-function isEditing(item: Item): boolean {
-  return !!item.variable && editingStates[item.variable]
-}
-
-// Начать редактирование элемента
-function startEditing(item: Item) {
-  if (item.variable) {
-    editingStates[item.variable] = true
-    editingValues[item.variable] = item.hidden_data || ''
-  }
-}
-
-// Отменить редактирование
-function cancelEditing(item: Item) {
-  if (item.variable) {
-    editingStates[item.variable] = false
-    delete editingValues[item.variable]
-  }
-}
-
-// Сохранить изменения элемента
-function saveItemChange(item: Item) {
-  if (!item.variable) return
-  
-  const newValue = editingValues[item.variable]
-  const originalValue = item.hidden_data
-  
-  if (newValue !== originalValue) {
-    // Добавляем изменение в store с новой структурой
-    changesStore.addChange({
-      blockId: props.data.components_id || props.data.component_name || 'unknown',
-      itemIndex: props.data.items?.indexOf(item) || 0,
-      field: item.variable,
-      oldValue: originalValue,
-      newValue: newValue
-    })
-  }
-  
-  // Завершаем редактирование
-  editingStates[item.variable] = false
-  delete editingValues[item.variable]
-}
-
-// Получение отображаемого значения
-function getDisplayValue(item: Item): string {
-  if (typeof item.data === 'string') {
-    return item.data
-  } else if (typeof item.data === 'object' && item.data !== null) {
-    // Безопасное обращение к свойствам
-    const dataObj = item.data as any
-    return dataObj.text || dataObj.title || String(item.data)
-  }
-  return String(item.data || '')
-}
-
-// Проверка, изменен ли элемент
-function isItemChanged(item: Item): boolean {
-  if (!item.variable) return false
-  
-  const blockId = props.data.components_id || props.data.component_name || 'unknown'
-  const itemIndex = props.data.items?.indexOf(item) || 0
-  
-  const changes = changesStore.getChangesByBlock(blockId)
-  return changes.some(c => c.itemIndex === itemIndex && c.field === item.variable)
 }
 
 async function handleClick() {
