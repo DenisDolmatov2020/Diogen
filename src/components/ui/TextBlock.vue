@@ -14,7 +14,7 @@
           <!-- Многострочное поле -->
           <textarea 
             v-if="isItemMultiline(item)"
-            v-model="editableValues[item.variable]"
+            v-model="editableValues[item.variable!]"
             :placeholder="getItemPlaceholder(item)"
             class="editable-input multiline"
             @input="handleItemInput"
@@ -24,7 +24,7 @@
           <input 
             v-else
             type="text"
-            v-model="editableValues[item.variable]"
+            v-model="editableValues[item.variable!]"
             :placeholder="getItemPlaceholder(item)"
             class="editable-input"
             @input="handleItemInput"
@@ -46,8 +46,8 @@
           <span v-if="item.status" class="item-status" :class="getStatusClass(item.status)">
             {{ getStatusText(item.status) }}
           </span>
-          <span class="item-fate" :class="getFateClass(item.fate)">
-            {{ getFateText(item.fate) }}
+          <span class="item-fate" :class="getFateClass(item.fate || '')">
+            {{ getFateText(item.fate || '') }}
           </span>
         </div>
       </div>
@@ -235,8 +235,8 @@ onMounted(() => {
   if (props.data.items) {
     props.data.items.forEach(item => {
       const value = item.data?.toString() || ''
-      editableValues[item.variable] = value
-      originalValues[item.variable] = value
+      editableValues[item.variable!] = value
+      originalValues[item.variable!] = value
     })
   }
 })
@@ -260,12 +260,12 @@ function getItemClass(item: Item): string[] {
 
 // Проверка, изменен ли элемент
 function isItemModified(item: Item): boolean {
-  return editableValues[item.variable] !== originalValues[item.variable]
+  return editableValues[item.variable!] !== originalValues[item.variable!]
 }
 
 // Проверка, многострочное ли поле для элемента
 function isItemMultiline(item: Item): boolean {
-  const variable = item.variable.toLowerCase()
+  const variable = item.variable!.toLowerCase()
   return variable.includes('description') || 
          variable.includes('comment') || 
          variable.includes('justification') ||
@@ -276,7 +276,7 @@ function isItemMultiline(item: Item): boolean {
 
 // Получение плейсхолдера для элемента
 function getItemPlaceholder(item: Item): string {
-  return `Введите ${item.title.toLowerCase()}`
+  return `Введите ${(item.title || 'значение').toLowerCase()}`
 }
 
 // Обработчик изменения значения элемента
@@ -331,7 +331,7 @@ function getFieldChanges() {
   if (props.data.items) {
     props.data.items.forEach(item => {
       if (item.fate === 'editable' && isItemModified(item)) {
-        changes[item.variable] = editableValues[item.variable]
+        changes[item.variable!] = editableValues[item.variable!]
         hasChanges = true
       }
     })

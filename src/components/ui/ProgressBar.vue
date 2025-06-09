@@ -59,7 +59,7 @@ const label = computed(() => {
   // Если есть items, берем заголовок первого элемента
   if (props.data.items && props.data.items.length > 0) {
     const firstItem = props.data.items[0]
-    return firstItem.title || getProgressLabel(firstItem.variable)
+    return firstItem.title || getProgressLabel(firstItem.variable || '')
   }
   
   const keysParam = props.data.action_params?.find(p => p.variable === 'keys')

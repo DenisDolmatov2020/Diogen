@@ -4,29 +4,30 @@ import { getGeneratedRoutes } from '@/router/generatedRoutes'
 import { 
   getCurrentReferenceId 
 } from '@/utils/referenceIdManager'
+
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 // Получаем список всех доступных маршрутов для навигации
 const routes = getGeneratedRoutes()
 
-// Получаем текущий маршрут
-const route = useRoute()
-
 // Состояние для reference_id
 const currentRefId = ref<string>('')
 const isHeaderVisible = ref(false)
-
-// Проверяем, нужно ли скрывать кнопку меню
-const shouldShowMenuButton = computed(() => {
-  return !route.query.hideMenuIcon
-})
 
 // Загрузка текущего reference_id
 function loadCurrentReferenceId() {
   const refId = getCurrentReferenceId()
   currentRefId.value = refId || 'Не установлен'
 }
+
+// Получаем текущий маршрут
+const route = useRoute()
+
+// Проверяем, нужно ли скрывать кнопку меню
+const shouldShowMenuButton = computed(() => {
+  return !route.query.hideMenuIcon
+})
 
 // Показать header
 function showHeader() {
@@ -65,7 +66,22 @@ onMounted(() => {
 
 <template>
   <div class="header-container">
-†
+
+
+    <!-- Кнопка показа меню -->
+    <div
+      v-if="shouldShowMenuButton"
+      class="menu-trigger"
+      @mouseenter="showHeader"
+      :class="{ 'trigger-active': isHeaderVisible }"
+    >
+      <div class="trigger-icon">
+        <div class="trigger-line"></div>
+        <div class="trigger-line"></div>
+        <div class="trigger-line"></div>
+      </div>
+      <div class="trigger-text">меню</div>
+    </div>
 
     <!-- Основной header -->
     <header 

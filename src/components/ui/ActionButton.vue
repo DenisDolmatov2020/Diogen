@@ -92,20 +92,6 @@ const buttonClasses = computed(() => {
   return baseClasses
 })
 
-const getItemRowClass = computed(() => (item: Item) => {
-  const classes = []
-  
-  if (item.status === 'processed') {
-    classes.push('item-processed')
-  } else if (item.status === 'missed') {
-    classes.push('item-missed')
-  } else if (item.status === 'unprocessed') {
-    classes.push('item-unprocessed')
-  }
-  
-  return classes
-})
-
 const getItemTitleClass = computed(() => (item: Item) => {
   const classes = ['item-title']
   
@@ -210,12 +196,14 @@ function saveItemChange(item: Item) {
   delete editingValues[item.variable]
 }
 
-// Получить отображаемое значение для элемента
+// Получение отображаемого значения
 function getDisplayValue(item: Item): string {
   if (typeof item.data === 'string') {
     return item.data
   } else if (typeof item.data === 'object' && item.data !== null) {
-    return item.data.text || item.data.title || String(item.data)
+    // Безопасное обращение к свойствам
+    const dataObj = item.data as any
+    return dataObj.text || dataObj.title || String(item.data)
   }
   return String(item.data || '')
 }
