@@ -231,6 +231,9 @@ onMounted(() => {
   border-radius: 0 0 24px 24px;
   margin: 0 16px;
   overflow: hidden;
+  
+  /* Добавляем max-height для предотвращения перекрытия элементов */
+  max-height: 0;
 }
 
 .header::before {
@@ -245,6 +248,7 @@ onMounted(() => {
 
 .header-visible {
   transform: translateY(0);
+  max-height: 200px; /* Устанавливаем достаточную высоту для видимого хеадера */
 }
 
 .nav-container {
@@ -390,6 +394,10 @@ onMounted(() => {
     border-radius: 0 0 16px 16px;
   }
   
+  .header-visible {
+    max-height: 250px; /* Увеличиваем высоту для мобильных устройств */
+  }
+  
   .nav-container {
     padding: 12px 16px;
   }
@@ -427,6 +435,10 @@ onMounted(() => {
 @media (max-width: 480px) {
   .header {
     margin: 0 4px;
+  }
+  
+  .header-visible {
+    max-height: 280px; /* Ещё больше высоты для маленьких экранов */
   }
   
   .nav-container {
