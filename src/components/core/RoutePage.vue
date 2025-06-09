@@ -277,7 +277,7 @@ onMounted(() => {
             </div>
           </div>
           <iframe 
-            src="https://diogen.netlify.app/test/backend_integration/chat?hideMenuIcon=true"
+            src="https://diogen.netlify.app/chat?hideMenuIcon=true"
             width="508"
             height="552"
             frameborder="0"
