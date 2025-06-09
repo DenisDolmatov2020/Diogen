@@ -16,17 +16,20 @@
 # Редирект для SPA
 [[redirects]]
   from = "/*"
-  to = "/test/backend_integration"
+  to = "/index.html"
   status = 200
+  force = false
+  conditions = {Country = ["*"]}
 
 # Заголовки для всех запросов
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "frame-ancestors 'self' *.netlify.app"
 
 # Заголовки для API запросов
 [[headers]]
@@ -34,4 +37,16 @@
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization, X-TOKEN, X-Front-Token" 
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-TOKEN, X-Front-Token"
+
+[[redirects]]
+  from = "/test/*"
+  to = "/test/backend_integration"
+  status = 301
+  force = false
+
+[[redirects]]
+  from = "/"
+  to = "/test/backend_integration"
+  status = 301
+  force = false 
