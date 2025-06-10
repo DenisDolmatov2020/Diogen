@@ -73,13 +73,17 @@ export function getCurrentReferenceId(): string | null {
 }
 
 /**
- * Получает reference_id или генерирует новый, если его нет
+ * Получает reference_id или генерирует новый, если его нет или PROJECT_ID не совпадает
  */
 export function getOrCreateReferenceId(): string {
   let referenceId = getCurrentReferenceId()
   
   if (!referenceId) {
     console.log('🔄 [getOrCreateReferenceId] reference_id не найден, генерируем новый')
+    referenceId = generateReferenceId()
+    saveReferenceId(referenceId)
+  } else if (!isValidReferenceId(referenceId)) {
+    console.log('🔄 [getOrCreateReferenceId] reference_id невалидный или PROJECT_ID не совпадает, генерируем новый')
     referenceId = generateReferenceId()
     saveReferenceId(referenceId)
   } else {
@@ -162,4 +166,27 @@ export function parseReferenceId(referenceId: string): ReferenceIdConfig | null 
     console.error('❌ [parseReferenceId] Ошибка парсинга reference_id:', error)
     return null
   }
+}
+
+/**
+ * Проверяет валидность reference_id (правильный формат и совпадение PROJECT_ID)
+ */
+export function isValidReferenceId(referenceId: string): boolean {
+  const currentProjectId = import.meta.env.VITE_PROJECT_ID || '000'
+  const parsedId = parseReferenceId(referenceId)
+  
+  if (!parsedId) {
+    return false
+  }
+  
+  const isValid = parsedId.projectId === currentProjectId
+  
+  console.log('🔍 [isValidReferenceId] Проверка reference_id:', {
+    referenceId,
+    parsedProjectId: parsedId.projectId,
+    currentProjectId,
+    isValid
+  })
+  
+  return isValid
 } 

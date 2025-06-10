@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { getCurrentReferenceId, createNewReferenceIdFromServer, clearReferenceId } from '@/utils/referenceIdManager'
 
 const currentRefId = ref<string>('')
@@ -10,6 +10,16 @@ const inputTitle = ref<string>('')
 const inputText = ref<string>('')
 const inputAudio = ref<string>('')
 const inputFile = ref<string>('')
+
+// Computed properties для переменных окружения
+const envVars = computed(() => ({
+  projectId: import.meta.env.VITE_PROJECT_ID || 'не установлен',
+  userId: import.meta.env.VITE_USER_ID || 'не установлен', 
+  devMode: import.meta.env.VITE_DEV_MODE || 'false',
+  nodeEnv: import.meta.env.MODE,
+  apiUrl: import.meta.env.VITE_CHAT_API_URL || 'не установлен',
+  basicLogin: import.meta.env.VITE_API_BASIC_LOGIN || 'не установлен'
+}))
 
 // Загружаем текущий Reference ID
 function loadCurrentReferenceId() {
@@ -240,6 +250,49 @@ onMounted(() => {
             </form>
           </div>
         </div>
+
+        <!-- Переменные окружения -->
+        <div class="card env-vars-card">
+          <div class="card-header">
+            <h2 class="card-title">⚙️ Переменные окружения</h2>
+          </div>
+          <div class="card-content">
+            <div class="env-grid">
+              <div class="env-item">
+                <span class="env-label">PROJECT_ID:</span>
+                <code class="env-value">{{ envVars.projectId }}</code>
+              </div>
+              <div class="env-item">
+                <span class="env-label">USER_ID:</span>
+                <code class="env-value">{{ envVars.userId }}</code>
+              </div>
+              <div class="env-item">
+                <span class="env-label">DEV_MODE:</span>
+                <code class="env-value">{{ envVars.devMode }}</code>
+              </div>
+              <div class="env-item">
+                <span class="env-label">NODE_ENV:</span>
+                <code class="env-value">{{ envVars.nodeEnv }}</code>
+              </div>
+              <div class="env-item">
+                <span class="env-label">API_URL:</span>
+                <code class="env-value">{{ envVars.apiUrl }}</code>
+              </div>
+              <div class="env-item">
+                <span class="env-label">BASIC_LOGIN:</span>
+                <code class="env-value">{{ envVars.basicLogin }}</code>
+              </div>
+            </div>
+            
+            <div class="env-info">
+              <p class="env-notice">
+                📝 <strong>Примечание:</strong> Эти значения берутся из переменных окружения. 
+                На Netlify нужно настроить их в панели управления: 
+                <strong>Site settings → Environment variables</strong>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -295,7 +348,7 @@ onMounted(() => {
 
 /* Контент страницы */
 .page-content {
-  @apply grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8;
+  @apply grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8;
 }
 
 /* Карточки */
@@ -383,6 +436,38 @@ onMounted(() => {
 /* Создание нового ID */
 .create-id-card {
   @apply border-l-4 border-l-blue-500;
+}
+
+/* Переменные окружения */
+.env-vars-card {
+  @apply border-l-4 border-l-purple-500;
+}
+
+.env-grid {
+  @apply grid grid-cols-1 gap-3 lg:gap-4 mb-4;
+}
+
+.env-item {
+  @apply flex flex-col sm:flex-row sm:items-center gap-2;
+  @apply bg-gray-50 p-3 rounded-lg border border-gray-200;
+}
+
+.env-label {
+  @apply text-sm font-semibold text-gray-600 uppercase tracking-wide;
+  @apply sm:w-32 flex-shrink-0;
+}
+
+.env-value {
+  @apply text-sm font-mono text-gray-800 bg-white px-2 py-1 rounded border;
+  @apply flex-1 break-all;
+}
+
+.env-info {
+  @apply bg-blue-50 border border-blue-200 rounded-lg p-3;
+}
+
+.env-notice {
+  @apply text-sm text-blue-800 mb-0;
 }
 
 .create-form {
