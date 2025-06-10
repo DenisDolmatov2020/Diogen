@@ -104,6 +104,10 @@ async function sendMessage(messageText?: string, keys?: string[]) {
   // Очищаем поле ввода только если это обычное сообщение
   if (!messageText) {
     inputMessage.value = ''
+    // Сбрасываем высоту textarea
+    if (textareaRef.value) {
+      textareaRef.value.style.height = 'auto'
+    }
   }
   
   // Добавляем индикатор загрузки
@@ -144,6 +148,13 @@ async function sendMessage(messageText?: string, keys?: string[]) {
     addMessage('Извините, произошла ошибка. Попробуйте еще раз.', false)
   } finally {
     isLoading.value = false
+    
+    // Возвращаем фокус с задержкой для надежности
+    setTimeout(() => {
+      if (textareaRef.value) {
+        textareaRef.value.focus()
+      }
+    }, 100)
   }
 }
 
@@ -184,6 +195,13 @@ function handleBlockAction(actionData: any) {
     if (buttonTitle) {
       // Отправляем сообщение с заголовком кнопки
       sendMessage(buttonTitle)
+      
+      // Возвращаем фокус с задержкой
+      setTimeout(() => {
+        if (textareaRef.value) {
+          textareaRef.value.focus()
+        }
+      }, 150)
     } else {
       console.warn('⚠️ Не найден title для кнопки действия:', actionData)
     }
@@ -292,9 +310,9 @@ function formatMessageText(text: string): string {
           <textarea
             ref="textareaRef"
             v-model="inputMessage"
-            :disabled="isLoading"
-            placeholder="Введите запрос..."
+            :placeholder="isLoading ? 'Получаю ответ...' : 'Введите запрос...'"
             class="input-field"
+            :class="{ 'input-loading': isLoading }"
             rows="1"
             @keydown="handleKeyPress"
             @input="handleInput"
@@ -524,8 +542,16 @@ function formatMessageText(text: string): string {
   color: #333333;
 }
 
+.input-field.input-loading {
+  @apply opacity-60;
+}
+
 .input-field::placeholder {
   @apply text-gray-400;
+}
+
+.input-field.input-loading::placeholder {
+  @apply text-blue-400;
 }
 
 .send-button {
