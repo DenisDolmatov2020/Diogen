@@ -1,2 +1,6 @@
-/api/* https://di.slovo-soft.ru:6443/:splat 200
-/* /index.html 200 
+# API redirects for Netlify
+/api/v1/mentorium  http://194.87.143.218:8901/api/v1/mentorium  200
+/api/*  http://194.87.143.218:8901/api/:splat  200
+
+# SPA fallback
+/*  /index.html  200 
