@@ -393,7 +393,7 @@ function formatMessageText(text: string): string {
 }
 
 .message-content {
-  @apply max-w-md;
+  @apply max-w-xl;
 }
 
 /* Сообщения пользователя */
@@ -409,15 +409,25 @@ function formatMessageText(text: string): string {
   border-width: 1px;
   border-color: #E5E7EB;
   min-width: 280px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 /* Сообщения бота */
 .message-bot .message-content {
   @apply bg-white text-gray-900 rounded-2xl rounded-bl-md px-4 py-2 border border-gray-200;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .message-text {
   @apply text-sm leading-relaxed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .message-time {
@@ -582,7 +592,7 @@ function formatMessageText(text: string): string {
   }
   
   .message-content {
-    @apply max-w-xs;
+    @apply max-w-md;
   }
   
   .rendered-blocks :deep(.component-image) {
