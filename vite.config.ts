@@ -16,8 +16,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/api/v1/mentorium': {
+        target: 'http://194.87.143.218:8901',
+        changeOrigin: true,
+        secure: false
+      },
       '/api': {
-        target: 'https://di.slovo-soft.ru:6443',
+        target: 'http://194.87.143.218:8901',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '')

@@ -3,11 +3,12 @@ export const env = {
   
   // API конфигурация
   api: {
-    authUrl: import.meta.env.VITE_API_AUTH_URL || 'https://di.slovo-soft.ru:6443',
+    authUrl: import.meta.env.VITE_API_AUTH_URL || 'http://194.87.143.218:8901',
     frontToken: import.meta.env.VITE_APP_FRONT_TOKEN || '123456',
     basicLogin: import.meta.env.VITE_API_BASIC_LOGIN || 'slsuser',
-    basicPassword: import.meta.env.VITE_API_BASIC_PASSWORD || '',
-    loginEndpoint: import.meta.env.VITE_API_LOGIN_ENDPOINT || 'api/auth/token'
+    basicPassword: import.meta.env.VITE_API_BASIC_PASSWORD || '20241001',
+    loginEndpoint: import.meta.env.VITE_API_LOGIN_ENDPOINT || 'api/auth/token',
+    chatUrl: import.meta.env.VITE_CHAT_API_URL || 'http://194.87.143.218:8901/api/v1/mentorium'
   },
   
   // Проект конфигурация
