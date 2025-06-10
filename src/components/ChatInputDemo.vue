@@ -303,7 +303,7 @@ function simulateLoading() {
 }
 
 .message-content {
-  @apply bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-br-md max-w-xs;
+  @apply bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-br-md max-w-sm;
   word-break: break-word;
 }
 
