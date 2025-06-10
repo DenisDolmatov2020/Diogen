@@ -10,7 +10,7 @@
 PROJECT_ID.USER_ID.TIMESTAMP
 ```
 
-- **PROJECT_ID** - ID проекта из `VITE_PROJECT_ID` (по умолчанию: 001)
+- **PROJECT_ID** - ID проекта из `VITE_PROJECT_ID` (по умолчанию: 000)
 - **USER_ID** - ID пользователя из `VITE_USER_ID` (по умолчанию: 3654823)  
 - **TIMESTAMP** - Unix timestamp в секундах
 
