@@ -13,7 +13,7 @@ export const env = {
   
   // Проект конфигурация
   project: {
-    id: import.meta.env.VITE_PROJECT_ID || '001',
+    id: import.meta.env.VITE_PROJECT_ID || '000',
     userId: import.meta.env.VITE_USER_ID || '3654823'
   },
   

@@ -11,7 +11,7 @@ interface ReferenceIdConfig {
  * Формат: PROJECT_ID.USER_ID
  */
 export function generatePartialReferenceId(): string {
-  const projectId = import.meta.env.VITE_PROJECT_ID || '001'
+  const projectId = import.meta.env.VITE_PROJECT_ID || '000'
   const userId = import.meta.env.VITE_USER_ID || '3654823'
   
   const partialReferenceId = `${projectId}.${userId}`
@@ -30,7 +30,7 @@ export function generatePartialReferenceId(): string {
  * Формат: PROJECT_ID.USER_ID.TIMESTAMP
  */
 export function generateReferenceId(): string {
-  const projectId = import.meta.env.VITE_PROJECT_ID || '001'
+  const projectId = import.meta.env.VITE_PROJECT_ID || '000'
   const userId = import.meta.env.VITE_USER_ID || '3654823'
   const timestamp = Math.floor(Date.now() / 1000) // Unix timestamp в секундах
   

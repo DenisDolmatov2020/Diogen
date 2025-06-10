@@ -14,7 +14,7 @@ PROJECT_ID.USER_ID.TIMESTAMP
 - **USER_ID** - ID пользователя из `VITE_USER_ID` (по умолчанию: 3654823)  
 - **TIMESTAMP** - Unix timestamp в секундах
 
-Пример: `001.3654823.1745947893`
+Пример: `000.3654823.1745947893`
 
 ## Настройка переменных окружения
 
@@ -22,7 +22,7 @@ PROJECT_ID.USER_ID.TIMESTAMP
 
 ```env
 # Reference ID Configuration
-VITE_PROJECT_ID=001
+VITE_PROJECT_ID=000
 VITE_USER_ID=3654823
 ```
 
@@ -37,7 +37,7 @@ VITE_USER_ID=3654823
   "action_params": [
     {
       "variable": "reference_id",
-      "data": "001.3654823.1745947893"
+      "data": "000.3654823.1745947893"
     }
   ]
 }
@@ -119,8 +119,8 @@ VITE_USER_ID=3654823
 Пример логов:
 ```
 🆔 [generateReferenceId] Генерируем новый reference_id: {...}
-🔧 [injectReferenceId] Внедряем reference_id: 001.3654823.1745947893
+🔧 [injectReferenceId] Внедряем reference_id: 000.3654823.1745947893
   🔍 Обрабатываем блок: info_panel
-    ➕ Добавляем reference_id: 001.3654823.1745947893
+    ➕ Добавляем reference_id: 000.3654823.1745947893
 ✅ [injectReferenceId] reference_id успешно внедрен во все блоки
 ``` 

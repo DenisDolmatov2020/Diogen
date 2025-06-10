@@ -3,6 +3,7 @@ import { ref, nextTick, onMounted } from 'vue'
 import { apiService } from '@/api/apiService'
 import BlockRenderer from '@/components/core/BlockRenderer.vue'
 import { transformMessageComponentsToTreeBlocks, createTextMessageBlock } from '@/utils/chatTransform'
+import { getOrCreateReferenceId } from '@/utils/referenceIdManager'
 import type { TreeBlock } from '@/types/block'
 
 interface Message {
@@ -38,6 +39,10 @@ const currentReferenceId = ref<string>('')
 
 // Добавляем начальное сообщение от бота
 onMounted(() => {
+  // Инициализируем reference_id при загрузке страницы
+  currentReferenceId.value = getOrCreateReferenceId()
+  console.log('🆔 Инициализирован reference_id для чата:', currentReferenceId.value)
+  
   addMessage('Привет! Я ваш помощник-бот. Как дела? Чем могу помочь?', false)
   
   // Устанавливаем фокус на поле ввода

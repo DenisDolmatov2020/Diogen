@@ -1,4 +1,5 @@
 import { env, devLog, devWarn, devError } from '@/utils/env'
+import { getOrCreateReferenceId } from '@/utils/referenceIdManager'
 
 interface AuthResponse {
   access_token: string
@@ -351,6 +352,10 @@ class ApiService {
     try {
       devLog('💬 Отправка сообщения чат-боту:', { message, referenceId, keys })
       
+      // Используем переданный reference_id или получаем/создаем сохраненный
+      const finalReferenceId = referenceId || getOrCreateReferenceId()
+      devLog('🆔 Используемый reference_id:', finalReferenceId)
+      
       // Формируем запрос в новом формате
       const payload = [
         {
@@ -364,7 +369,7 @@ class ApiService {
             },
             {
               "variable": "reference_id",
-              "data": referenceId || `000.${env.project.userId}.${Math.floor(Date.now() / 1000)}t`
+              "data": finalReferenceId
             }
           ]
         }
