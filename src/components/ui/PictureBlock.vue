@@ -178,17 +178,26 @@ function onImageError(event: Event) {
 /* Контейнер изображения */
 .image-container {
   @apply w-full flex justify-center items-center bg-gray-50 rounded-lg overflow-hidden;
+  @apply transition-all duration-300 ease-out;
+  @apply cursor-pointer relative;
   min-height: 200px;
+}
+
+/* Hover эффект на контейнере для предотвращения мерцания */
+.image-container:hover {
+  @apply shadow-xl;
+  transform: translateY(-2px);
+}
+
+.image-container:hover .picture-image {
+  transform: scale(1.02);
 }
 
 /* Изображение */
 .picture-image {
-  @apply max-w-full max-h-full rounded-lg transition-all duration-300;
-  @apply hover:shadow-lg;
-}
-
-.picture-image:hover {
-  transform: scale(1.02);
+  @apply max-w-full max-h-full rounded-lg;
+  @apply transition-all duration-300 ease-out;
+  transform-origin: center;
 }
 
 /* Заголовок */
