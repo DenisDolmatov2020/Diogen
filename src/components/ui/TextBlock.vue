@@ -2,7 +2,7 @@
   <div class="text-block-wrapper" :class="{ editable: isEditable, modified: isModified }">
     <!-- Если есть items, показываем их -->
     <div v-if="data.items && data.items.length > 0" class="items-container">
-      <div v-for="(item, index) in data.items" :key="index" class="text-item" :class="getItemClass(item)">
+      <div v-for="(item, index) in data.items" :key="index" :class="getItemClass(item)">
         <!-- Заголовок элемента -->
         <div v-if="item.title" class="item-title">
           {{ item.title }}
@@ -42,14 +42,14 @@
         </div>
         
         <!-- Метаинформация -->
-        <div class="item-meta">
+        <!-- <div class="item-meta">
           <span v-if="item.status" class="item-status" :class="getStatusClass(item.status)">
             {{ getStatusText(item.status) }}
           </span>
           <span class="item-fate" :class="getFateClass(item.fate || '')">
             {{ getFateText(item.fate || '') }}
           </span>
-        </div>
+        </div> -->
       </div>
     </div>
     
@@ -245,15 +245,15 @@ onMounted(() => {
 function getItemClass(item: Item): string[] {
   const classes = ['text-item']
   
-  if (item.fate === 'editable') {
-    classes.push('item-editable')
-  }
+  // if (item.fate === 'editable') {
+  //   classes.push('item-editable')
+  // }
   
-  if (item.status === 'missed') {
-    classes.push('item-missed')
-  } else if (item.status === 'normal') {
-    classes.push('item-normal')
-  }
+  // if (item.status === 'missed') {
+  //   classes.push('item-missed')
+  // } else if (item.status === 'normal') {
+  //   classes.push('item-normal')
+  // }
   
   return classes
 }
@@ -379,9 +379,9 @@ defineExpose({
   @apply space-y-3;
 }
 
-.text-item {
+/* .text-item {
   @apply p-3 border border-gray-200 rounded bg-gray-50;
-}
+} */
 
 .text-item.item-editable {
   @apply border-blue-300 bg-blue-50;

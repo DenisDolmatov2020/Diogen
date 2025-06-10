@@ -417,7 +417,7 @@ function formatMessageText(text: string): string {
 
 /* Сообщения бота */
 .message-bot .message-content {
-  @apply bg-white text-gray-900 rounded-2xl rounded-bl-md px-4 py-2 border border-gray-200;
+  /* @apply bg-white text-gray-900 rounded-2xl rounded-bl-md px-4 py-2 border border-gray-200; */
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
