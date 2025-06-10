@@ -217,7 +217,6 @@ onMounted(() => {
 
 /* Основной header */
 .header {
-  max-width: 50vw;
   min-width: 360px;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.96) 100%);
   backdrop-filter: blur(25px);
