@@ -548,7 +548,7 @@ function formatMessageText(text: string): string {
 }
 
 .input-container {
-  @apply max-w-4xl mx-auto px-4 pt-2 pb-5;
+  @apply max-w-4xl mx-auto px-4 pt-2 pb-8;
 }
 
 .input-wrapper {
