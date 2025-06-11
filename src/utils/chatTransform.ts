@@ -19,8 +19,6 @@ export interface ComponentItem {
  * для использования с BlockRenderer
  */
 export function transformMessageComponentsToTreeBlocks(components: MessageComponent[]): TreeBlock[] {
-  console.log('🔄 [transformMessageComponentsToTreeBlocks] Трансформируем данные от бэкенда:', components)
-  
   return components.map((component, index) => {
     const componentId = `chat-${component.component_name}-${index}`
     

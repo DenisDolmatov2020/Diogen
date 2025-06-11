@@ -345,7 +345,7 @@ async function sendWithMeta() {
     
     // 9. Отправляем на бэкенд
     console.log('🚀 Отправляем на бэкенд...')
-    const response = await fetch('https://di.slovo-soft.ru:6443/create_answer_for_front_api', {
+    const response = await fetch('/create_answer_for_front_api', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

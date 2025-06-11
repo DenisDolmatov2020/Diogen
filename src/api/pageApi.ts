@@ -11,8 +11,7 @@ export interface LoadResult {
 
 export async function fetchFilledConfig(treeConfig: TreeBlock[]): Promise<LoadResult> {
   try {
-    console.log('🌳 Исходная древовидная структура:', JSON.stringify(treeConfig, null, 2))
-    
+
     // 1. Преобразуем древовидную структуру в плоскую для бэкенда
     const flatConfig = treeToFlat(treeConfig)
     console.log('🚀 Отправляем плоский конфиг на бэкенд:', flatConfig)
@@ -41,10 +40,8 @@ export async function fetchFilledConfig(treeConfig: TreeBlock[]): Promise<LoadRe
     
   } catch (error) {
     console.warn('⚠️ Бэкенд недоступен, используем mock данные:', error)
-    console.log('🌳 Исходная структура для mock данных:', JSON.stringify(treeConfig, null, 2))
     
     const mockData = generateMockTreeData(treeConfig)
-    console.log('🎭 Сгенерированные mock данные:', JSON.stringify(mockData, null, 2))
     
     return {
       data: mockData,
@@ -56,7 +53,6 @@ export async function fetchFilledConfig(treeConfig: TreeBlock[]): Promise<LoadRe
 
 function generateMockTreeData(treeConfig: TreeBlock[]): TreeBlock[] {
   console.log('🎭 [generateMockTreeData] Генерируем mock данные на основе реального ответа сервера')
-  console.log('  📊 Входящая структура:', JSON.stringify(treeConfig, null, 2))
   
   // Реальные данные от сервера с поддержкой items
   const realBackendData = [
@@ -278,7 +274,6 @@ function generateMockTreeData(treeConfig: TreeBlock[]): TreeBlock[] {
   
   // Применяем реальные данные к исходной структуре
   const result = applyBackendData(treeConfig, realBackendData)
-  console.log('🎭 [generateMockTreeData] Применены реальные данные:', JSON.stringify(result, null, 2))
-  
+
   return result
 }

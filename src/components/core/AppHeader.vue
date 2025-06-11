@@ -41,7 +41,7 @@ function hideHeader() {
 
 function getRouteLabel(routePath: string): string {
   const predefinedLabels: Record<string, string> = {
-    '/test/backend_integration': '🔧  Тест API',
+    '/test/backend_integration': '🔧 iFrame',
     '/demo/settings': 'Настройки',
     '/chat': '💬  Чат-бот',
     '/demo/input': '📝  Интерактивный ввод',

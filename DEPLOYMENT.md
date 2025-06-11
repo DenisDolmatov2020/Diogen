@@ -80,7 +80,7 @@ npm run dev
 В настройках Netlify добавьте:
 ```
 VITE_DEV_MODE=false
-VITE_API_AUTH_URL=https://di.slovo-soft.ru:6443
+VITE_API_AUTH_URL=http://194.87.143.218:8901
 VITE_APP_FRONT_TOKEN=123456
 ```
 

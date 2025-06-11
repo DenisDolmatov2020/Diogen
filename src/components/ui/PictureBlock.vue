@@ -16,14 +16,35 @@
       >
         <!-- Изображение -->
         <div class="image-container" :style="getImageContainerStyle(item.data)">
+          <!-- Отладочная информация -->
+          <div v-if="!getPictureData(item.data).src" class="debug-info">
+            <p>🐛 Отладка:</p>
+            <pre>{{ JSON.stringify(item.data, null, 2) }}</pre>
+          </div>
+          
+          <!-- Изображение -->
           <img 
+            v-if="getPictureData(item.data).src"
             :src="getPictureData(item.data).src"
             :alt="getPictureData(item.data).alt || item.title || 'Изображение'"
             :style="getImageStyle(item.data)"
             @load="onImageLoad"
             @error="onImageError"
-            class="picture-image"
+            @click="openModal(item.data, item.title)"
+            class="picture-image clickable"
           />
+          
+          <!-- Сообщение об ошибке только для действительно проблемных изображений -->
+          <div v-if="getPictureData(item.data).src && hasImageError(getPictureData(item.data).src)" class="error-overlay">
+            <p>❌ Не удалось загрузить изображение</p>
+            <p class="text-sm text-gray-500">{{ getPictureData(item.data).src }}</p>
+          </div>
+          
+          <!-- Сообщение об ошибке если нет src -->
+          <div v-else-if="!getPictureData(item.data).src" class="no-image-message">
+            <p>❌ Нет ссылки на изображение</p>
+            <p class="text-sm text-gray-500">Получено: {{ typeof item.data }} {{ item.data }}</p>
+          </div>
         </div>
         
         <!-- Заголовок под изображением -->
@@ -32,11 +53,39 @@
         </div>
       </div>
     </div>
+    
+    <!-- Модальное окно для полноэкранного просмотра -->
+    <Teleport to="body">
+      <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
+        <div class="modal-container">
+          <!-- Кнопка закрытия -->
+          <button @click="closeModal" class="modal-close-button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          
+          <!-- Изображение в модальном окне -->
+          <img 
+            v-if="modalImageData"
+            :src="modalImageData.src"
+            :alt="modalImageData.alt"
+            class="modal-image"
+            @click.stop
+          />
+          
+          <!-- Заголовок под изображением -->
+          <div v-if="modalImageData?.alt" class="modal-title">
+            {{ modalImageData.alt }}
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { TreeBlock, PictureData } from '@/types/block'
 
 const props = defineProps<{
@@ -48,6 +97,13 @@ const emit = defineEmits<{
   action: [data: any]
 }>()
 
+// Состояние для отслеживания ошибок загрузки изображений
+const imageErrors = ref<Set<string>>(new Set())
+
+// Состояние для модального просмотра
+const isModalOpen = ref(false)
+const modalImageData = ref<PictureData | null>(null)
+
 // Получаем элементы из данных
 const items = computed(() => {
   return props.data.items || []
@@ -55,9 +111,21 @@ const items = computed(() => {
 
 // Безопасное получение данных изображения
 function getPictureData(data: any): PictureData {
+  console.log('🖼️ PictureBlock получил data:', data)
+  console.log('🖼️ Тип data:', typeof data)
+  
   if (typeof data === 'object' && data !== null && 'src' in data) {
+    console.log('✅ Найден src в data:', data.src)
     return data as PictureData
   }
+  
+  // Если data - это строка, пытаемся использовать её как src
+  if (typeof data === 'string' && data.trim()) {
+    console.log('📝 Используем строку как src:', data)
+    return { src: data.trim() }
+  }
+  
+  console.warn('⚠️ Некорректные данные изображения:', data)
   // Возвращаем значение по умолчанию если данные некорректны
   return { src: '' }
 }
@@ -112,7 +180,17 @@ function getImageStyle(data: any): Record<string, string> {
 // Обработчики событий изображения
 function onImageLoad(event: Event) {
   const target = event.target as HTMLImageElement
-  console.log('✅ Изображение загружено:', target.src)
+  console.log('✅ Изображение загружено успешно:', target.src)
+  console.log('📏 Размеры изображения:', {
+    naturalWidth: target.naturalWidth,
+    naturalHeight: target.naturalHeight,
+    displayWidth: target.width,
+    displayHeight: target.height
+  })
+  
+  // Убираем из списка ошибок, если изображение загрузилось
+  imageErrors.value.delete(target.src)
+  
   emit('action', {
     type: 'image_loaded',
     timestamp: Date.now(),
@@ -127,7 +205,23 @@ function onImageLoad(event: Event) {
 
 function onImageError(event: Event) {
   const target = event.target as HTMLImageElement
-  console.error('❌ Ошибка загрузки изображения:', target.src)
+  console.error('❌ Ошибка загрузки изображения:', {
+    src: target.src,
+    error: event,
+    naturalWidth: target.naturalWidth,
+    naturalHeight: target.naturalHeight
+  })
+  
+  // Попробуем получить более подробную информацию об ошибке
+  console.error('🔍 Детали ошибки:', {
+    complete: target.complete,
+    currentSrc: target.currentSrc,
+    crossOrigin: target.crossOrigin
+  })
+  
+  // Добавляем в список ошибок
+  imageErrors.value.add(target.src)
+  
   emit('action', {
     type: 'image_error',
     timestamp: Date.now(),
@@ -140,6 +234,47 @@ function onImageError(event: Event) {
     }
   })
 }
+
+// Проверяем, есть ли ошибка у конкретного изображения
+function hasImageError(src: string): boolean {
+  return imageErrors.value.has(src)
+}
+
+// Функции для модального просмотра
+function openModal(data: any, title?: string) {
+  const pictureData = getPictureData(data)
+  if (pictureData.src && !hasImageError(pictureData.src)) {
+    modalImageData.value = {
+      ...pictureData,
+      alt: title || 'Изображение'
+    }
+    isModalOpen.value = true
+    document.body.style.overflow = 'hidden' // Блокируем скролл страницы
+  }
+}
+
+function closeModal() {
+  isModalOpen.value = false
+  modalImageData.value = null
+  document.body.style.overflow = '' // Восстанавливаем скролл страницы
+}
+
+// Обработка нажатия Escape
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isModalOpen.value) {
+    closeModal()
+  }
+}
+
+// Добавляем и убираем обработчик клавиатуры
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = '' // Восстанавливаем скролл при размонтировании
+})
 </script>
 
 <style scoped>
@@ -200,6 +335,15 @@ function onImageError(event: Event) {
   transform-origin: center;
 }
 
+.picture-image.clickable {
+  @apply cursor-pointer;
+}
+
+.picture-image.clickable:hover {
+  @apply shadow-lg;
+  transform: scale(1.02);
+}
+
 /* Заголовок */
 .picture-title {
   @apply text-center text-gray-700 font-medium text-lg;
@@ -240,10 +384,65 @@ function onImageError(event: Event) {
   }
 }
 
-/* Состояние ошибки изображения */
-.picture-image[alt]:after {
-  @apply absolute inset-0 flex items-center justify-center;
-  @apply bg-gray-100 text-gray-500 text-sm;
-  content: "Не удалось загрузить изображение";
+/* Отладочная информация */
+.debug-info {
+  @apply p-4 bg-yellow-50 border border-yellow-200 rounded text-xs;
+}
+
+.debug-info pre {
+  @apply bg-white p-2 rounded border mt-2 overflow-auto max-h-32;
+  font-family: 'Courier New', monospace;
+}
+
+.error-overlay {
+  @apply absolute inset-0 flex flex-col items-center justify-center;
+  @apply bg-red-50 border border-red-200 text-red-700 text-center p-4 rounded;
+}
+
+.no-image-message {
+  @apply p-4 text-center text-gray-600;
+}
+
+.no-image-message .text-sm {
+  @apply mt-2;
+}
+
+/* Модальное окно */
+.modal-overlay {
+  @apply fixed inset-0 z-50;
+  @apply bg-black bg-opacity-80;
+  @apply flex items-center justify-center p-4;
+  @apply cursor-pointer;
+  backdrop-filter: blur(4px);
+}
+
+.modal-container {
+  @apply relative max-w-[90vw] max-h-[90vh];
+  @apply flex flex-col items-center;
+  @apply cursor-default;
+}
+
+.modal-close-button {
+  @apply fixed top-1 right-1 z-10;
+  @apply bg-white bg-opacity-20 hover:bg-opacity-30;
+  @apply text-white p-2 rounded-full;
+  @apply transition-all duration-200;
+  @apply cursor-pointer;
+}
+
+.modal-close-button:hover {
+  @apply bg-opacity-40 scale-110;
+}
+
+.modal-image {
+  @apply max-w-full max-h-full object-contain;
+  @apply rounded-lg shadow-2xl;
+  @apply cursor-default;
+}
+
+.modal-title {
+  @apply text-white text-center mt-4 px-4;
+  @apply text-lg font-medium;
+  @apply bg-black bg-opacity-50 rounded-lg py-2;
 }
 </style> 

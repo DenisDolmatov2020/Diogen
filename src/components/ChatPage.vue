@@ -226,11 +226,31 @@ function handleInput() {
 
 // Простая обработка markdown-подобного форматирования
 function formatMessageText(text: string): string {
-  return text
+  if (!text) return ''
+  
+  let formatted = text
+  
+  // Обрабатываем переносы строк
+  formatted = formatted
+    .replace(/\\r\\n/g, '\n') // \r\n -> \n
+    .replace(/\\n/g, '\n')   // \n -> \n
+    .replace(/\r\n/g, '\n')  // реальные \r\n -> \n
+    .replace(/\r/g, '\n')    // одиночные \r -> \n
+  
+  // Обрабатываем markdown форматирование
+  formatted = formatted
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
     .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
     .replace(/`(.*?)`/g, '<code>$1</code>') // `code`
-    .replace(/\n/g, '<br>') // переносы строк
+  
+  // Обрабатываем ссылки
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
+  formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>')
+  
+  // Обрабатываем переносы строк для HTML
+  formatted = formatted.replace(/\n/g, '<br>')
+  
+  return formatted
 }
 </script>
 
@@ -614,5 +634,17 @@ function formatMessageText(text: string): string {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
+}
+
+/* Стили для ссылок в чате */
+.message-text :deep(.chat-link) {
+  color: #0053DA;
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.message-text :deep(.chat-link:hover) {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 </style> 

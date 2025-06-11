@@ -33,7 +33,7 @@
         
         <!-- Режим просмотра для readonly элементов -->
         <div v-else class="text-content">
-          {{ item.data || 'Нет данных' }}
+          <div v-html="formatText(item.data)"></div>
         </div>
         
         <!-- Скрытые данные -->
@@ -90,7 +90,7 @@
       
       <!-- Режим просмотра (не редактирования) -->
       <div v-else class="text-content">
-        {{ getContent() }}
+        <div v-html="formatText(getContent())"></div>
       </div>
     </div>
     
@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, reactive } from 'vue'
-import type { TreeBlock, Item } from '@/types/block'
+import type { TreeBlock, Item, ItemData } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock
@@ -222,6 +222,29 @@ function formatFieldName(name: string) {
   )
   
   return formattedWords.join(' ')
+}
+
+// Функция для форматирования текста
+function formatText(text: string | undefined | null | ItemData): string {
+  if (!text) return ''
+  
+  let formatted = text.toString()
+  
+  // Обрабатываем переносы строк
+  formatted = formatted
+    .replace(/\\r\\n/g, '\n') // \r\n -> \n
+    .replace(/\\n/g, '\n')   // \n -> \n
+    .replace(/\r\n/g, '\n')  // реальные \r\n -> \n
+    .replace(/\r/g, '\n')    // одиночные \r -> \n
+  
+  // Обрабатываем ссылки
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
+  formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-link">$1</a>')
+  
+  // Обрабатываем переносы строк для HTML
+  formatted = formatted.replace(/\n/g, '<br>')
+  
+  return formatted
 }
 
 // Обработчик изменения значения
@@ -424,5 +447,17 @@ defineExpose({
 
 .input-label {
   @apply text-sm text-gray-600 mt-1;
+}
+
+/* Стили для ссылок */
+.text-content :deep(.text-link) {
+  color: #0053DA;
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.text-content :deep(.text-link:hover) {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 </style>

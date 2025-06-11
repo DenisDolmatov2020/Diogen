@@ -163,8 +163,6 @@ function getParentId(componentId: string): string | null {
  */
 export function applyBackendData(treeBlocks: TreeBlock[], backendData: any[]): TreeBlock[] {
   console.log('🔄 [applyBackendData] Применяем данные от бэкенда к дереву')
-  console.log('  📊 Входящее дерево:', JSON.stringify(treeBlocks, null, 2))
-  console.log('  📥 Данные от бэкенда:', JSON.stringify(backendData, null, 2))
   
   // Создаем карту данных от бэкенда по component_id для быстрого поиска
   const backendMap = new Map<string, any>()
@@ -245,8 +243,6 @@ export function applyBackendData(treeBlocks: TreeBlock[], backendData: any[]): T
   }
   
   const result = treeBlocks.map((block, index) => applyDataToBlock(block, index.toString()))
-  
-  console.log('🔄 [applyBackendData] Результат применения данных:', JSON.stringify(result, null, 2))
   
   return result
 } 
