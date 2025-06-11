@@ -37,7 +37,15 @@
           <!-- Сообщение об ошибке только для действительно проблемных изображений -->
           <div v-if="getPictureData(item.data).src && hasImageError(getPictureData(item.data).src)" class="error-overlay">
             <p>❌ Не удалось загрузить изображение</p>
-            <p class="text-sm text-gray-500">{{ getPictureData(item.data).src }}</p>
+            <a 
+              :href="getPictureData(item.data).src" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="error-link"
+              @click.stop
+            >
+              {{ getPictureData(item.data).src }}
+            </a>
           </div>
           
           <!-- Сообщение об ошибке если нет src -->
@@ -397,6 +405,13 @@ onUnmounted(() => {
 .error-overlay {
   @apply absolute inset-0 flex flex-col items-center justify-center;
   @apply bg-red-50 border border-red-200 text-red-700 text-center p-4 rounded;
+}
+
+.error-link {
+  @apply text-blue-500 hover:text-blue-700 underline;
+  @apply text-sm break-all;
+  @apply transition-colors duration-200;
+  @apply mt-2 block;
 }
 
 .no-image-message {
