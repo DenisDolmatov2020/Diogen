@@ -224,14 +224,6 @@ function handleInput() {
   }
 }
 
-// Форматирование времени
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('ru-RU', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  })
-}
-
 // Простая обработка markdown-подобного форматирования
 function formatMessageText(text: string): string {
   return text
@@ -296,7 +288,6 @@ function formatMessageText(text: string): string {
                   </div>
                 </div>
               </div>
-              <div class="message-time">{{ formatTime(message.timestamp) }}</div>
             </div>
           </div>
         </TransitionGroup>
@@ -343,7 +334,7 @@ function formatMessageText(text: string): string {
 
 <style scoped>
 .chat-page {
-  @apply w-full h-screen flex flex-col bg-gray-50;
+  @apply w-full h-screen flex flex-col bg-[#F1F4F7];
   margin: 0;
   padding: 0;
 }
@@ -393,7 +384,7 @@ function formatMessageText(text: string): string {
 }
 
 .message-content {
-  @apply max-w-xl;
+  @apply max-w-[384px];
 }
 
 /* Сообщения пользователя */
@@ -417,7 +408,7 @@ function formatMessageText(text: string): string {
 
 /* Сообщения бота */
 .message-bot .message-content {
-  /* @apply bg-white text-gray-900 rounded-2xl rounded-bl-md px-4 py-2 border border-gray-200; */
+  @apply text-gray-900 rounded-2xl rounded-bl-md px-4 py-2;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -533,7 +524,7 @@ function formatMessageText(text: string): string {
 
 /* Зафиксированное поле ввода */
 .chat-input-fixed {
-  @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10;
+  @apply fixed bottom-0 left-0 right-0 z-10 bg-[#F1F4F7];
 }
 
 .input-container {

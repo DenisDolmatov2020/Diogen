@@ -2,7 +2,7 @@
   <div class="text-block-wrapper" :class="{ editable: isEditable, modified: isModified }">
     <!-- Если есть items, показываем их -->
     <div v-if="data.items && data.items.length > 0" class="items-container">
-      <div v-for="(item, index) in data.items" :key="index" :class="getItemClass(item)">
+      <div v-for="(item, index) in data.items" :key="index" :class="getItemClass">
         <!-- Заголовок элемента -->
         <div v-if="item.title" class="item-title">
           {{ item.title }}
@@ -242,7 +242,7 @@ onMounted(() => {
 })
 
 // Получение класса для элемента
-function getItemClass(item: Item): string[] {
+function getItemClass(): string[] {
   const classes = ['text-item']
   
   // if (item.fate === 'editable') {
@@ -282,44 +282,6 @@ function getItemPlaceholder(item: Item): string {
 // Обработчик изменения значения элемента
 function handleItemInput() {
   // Просто отмечаем изменение, не отправляем событие
-}
-
-// Получение класса для статуса
-function getStatusClass(status: string): string {
-  switch (status) {
-    case 'normal': return 'status-normal'
-    case 'missed': return 'status-missed'
-    case 'unprocessed': return 'status-unprocessed'
-    default: return 'status-default'
-  }
-}
-
-// Получение класса для fate
-function getFateClass(fate: string): string {
-  switch (fate) {
-    case 'editable': return 'fate-editable'
-    case 'readonly': return 'fate-readonly'
-    default: return 'fate-default'
-  }
-}
-
-// Получение текста для статуса
-function getStatusText(status: string): string {
-  switch (status) {
-    case 'normal': return 'Норма'
-    case 'missed': return 'Пропущено'
-    case 'unprocessed': return 'Не обработано'
-    default: return status
-  }
-}
-
-// Получение текста для fate
-function getFateText(fate: string): string {
-  switch (fate) {
-    case 'editable': return 'Редактируемое'
-    case 'readonly': return 'Только чтение'
-    default: return fate
-  }
 }
 
 // Публичный метод для получения изменений (обновленный для поддержки items)
