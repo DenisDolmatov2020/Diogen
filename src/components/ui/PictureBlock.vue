@@ -324,6 +324,7 @@ onUnmounted(() => {
   @apply transition-all duration-300 ease-out;
   @apply cursor-pointer relative;
   min-height: 200px;
+  border-radius: 0;
 }
 
 /* Hover эффект на контейнере для предотвращения мерцания */
