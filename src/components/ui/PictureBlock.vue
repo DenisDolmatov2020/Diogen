@@ -37,6 +37,12 @@
           <!-- Сообщение об ошибке только для действительно проблемных изображений -->
           <div v-if="getPictureData(item.data).src && hasImageError(getPictureData(item.data).src)" class="error-overlay">
             <p>❌ Не удалось загрузить изображение</p>
+            
+            <!-- Специальное сообщение для Mixed Content -->
+            <div v-if="window.location.protocol === 'https:' && getPictureData(item.data).src.startsWith('http:')" class="mixed-content-warning">
+              <p class="text-xs">⚠️ Проблема безопасности: HTTP контент на HTTPS сайте</p>
+            </div>
+            
             <a 
               :href="getPictureData(item.data).src" 
               target="_blank" 
@@ -46,6 +52,15 @@
             >
               {{ getPictureData(item.data).src }}
             </a>
+            
+            <!-- Кнопка для попытки принудительной загрузки -->
+            <button 
+              v-if="window.location.protocol === 'https:' && getPictureData(item.data).src.includes('http:')"
+              @click.stop="tryForceLoad(item.data)"
+              class="force-load-button"
+            >
+              🔄 Попробовать загрузить принудительно
+            </button>
           </div>
           
           <!-- Сообщение об ошибке если нет src -->
@@ -122,20 +137,28 @@ function getPictureData(data: any): PictureData {
   console.log('🖼️ PictureBlock получил data:', data)
   console.log('🖼️ Тип data:', typeof data)
   
+  let pictureData: PictureData
+  
   if (typeof data === 'object' && data !== null && 'src' in data) {
     console.log('✅ Найден src в data:', data.src)
-    return data as PictureData
-  }
-  
-  // Если data - это строка, пытаемся использовать её как src
-  if (typeof data === 'string' && data.trim()) {
+    pictureData = data as PictureData
+  } else if (typeof data === 'string' && data.trim()) {
     console.log('📝 Используем строку как src:', data)
-    return { src: data.trim() }
+    pictureData = { src: data.trim() }
+  } else {
+    console.warn('⚠️ Некорректные данные изображения:', data)
+    return { src: '' }
   }
   
-  console.warn('⚠️ Некорректные данные изображения:', data)
-  // Возвращаем значение по умолчанию если данные некорректны
-  return { src: '' }
+  // Исправляем Mixed Content проблему
+  if (window.location.protocol === 'https:' && pictureData.src.startsWith('http:')) {
+    console.warn('🔒 Mixed Content обнаружен, пытаемся использовать HTTPS:', pictureData.src)
+    const httpsUrl = pictureData.src.replace('http:', 'https:')
+    console.log('🔄 Пробуем HTTPS версию:', httpsUrl)
+    return { ...pictureData, src: httpsUrl }
+  }
+  
+  return pictureData
 }
 
 // Определяем классы блока
@@ -224,7 +247,10 @@ function onImageError(event: Event) {
   console.error('🔍 Детали ошибки:', {
     complete: target.complete,
     currentSrc: target.currentSrc,
-    crossOrigin: target.crossOrigin
+    crossOrigin: target.crossOrigin,
+    currentURL: window.location.href,
+    protocol: window.location.protocol,
+    isMixedContent: window.location.protocol === 'https:' && target.src.startsWith('http:')
   })
   
   // Добавляем в список ошибок
@@ -238,7 +264,8 @@ function onImageError(event: Event) {
     payload: {
       src: target.src,
       error: 'Не удалось загрузить изображение',
-      component_id: props.data.component_id
+      component_id: props.data.component_id,
+      isMixedContent: window.location.protocol === 'https:' && target.src.startsWith('http:')
     }
   })
 }
@@ -283,6 +310,33 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = '' // Восстанавливаем скролл при размонтировании
 })
+
+// Принудительная попытка загрузки изображения
+function tryForceLoad(data: any) {
+  const pictureData = getPictureData(data)
+  if (pictureData.src) {
+    // Убираем из списка ошибок
+    imageErrors.value.delete(pictureData.src)
+    
+    // Пытаемся перезагрузить изображение
+    console.log('🔄 Принудительная попытка загрузки:', pictureData.src)
+    
+    // Добавляем случайный параметр для обхода кеша
+    const urlWithCache = pictureData.src + (pictureData.src.includes('?') ? '&' : '?') + 't=' + Date.now()
+    
+    // Создаем новый элемент img для тестирования
+    const testImg = new Image()
+    testImg.onload = () => {
+      console.log('✅ Принудительная загрузка успешна')
+      imageErrors.value.delete(pictureData.src)
+    }
+    testImg.onerror = () => {
+      console.error('❌ Принудительная загрузка неудачна')
+      imageErrors.value.add(pictureData.src)
+    }
+    testImg.src = urlWithCache
+  }
+}
 </script>
 
 <style scoped>
@@ -413,6 +467,18 @@ onUnmounted(() => {
   @apply text-sm break-all;
   @apply transition-colors duration-200;
   @apply mt-2 block;
+}
+
+.mixed-content-warning {
+  @apply bg-yellow-100 border border-yellow-300 rounded p-2 mt-2;
+  @apply text-yellow-800;
+}
+
+.force-load-button {
+  @apply mt-3 px-3 py-1 bg-blue-500 hover:bg-blue-600;
+  @apply text-white text-xs rounded;
+  @apply transition-colors duration-200;
+  @apply cursor-pointer;
 }
 
 .no-image-message {
