@@ -230,6 +230,12 @@ function formatMessageText(text: string): string {
   
   let formatted = text
   
+  // Убираем отладочную информацию
+  formatted = formatted.replace(/Бот работает в режиме спец тестирования\.\s*\\исходные ответы[\s\S]*?(?=\n\n|\n[А-Я]|$)/gi, '')
+  formatted = formatted.replace(/Уверенность системы в данных = \d+\.\d+%/gi, '')
+  formatted = formatted.replace(/Принято решение использовать finetune модель/gi, '')
+  formatted = formatted.replace(/Ответ модели до цензора:/gi, '')
+  
   // Обрабатываем переносы строк
   formatted = formatted
     .replace(/\\r\\n/g, '\n') // \r\n -> \n
@@ -243,14 +249,21 @@ function formatMessageText(text: string): string {
     .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
     .replace(/`(.*?)`/g, '<code>$1</code>') // `code`
   
-  // Обрабатываем ссылки
-  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
+  // Обрабатываем markdown ссылки [текст](url)
+  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/gi
+  formatted = formatted.replace(markdownLinkRegex, '<a href="$2" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>')
+  
+  // Обрабатываем обычные ссылки (только те, что не в markdown формате)
+  const urlRegex = /(?<!\]\()(https?:\/\/[^\s<>"{}|\\^`\[\]]+)(?!\))/gi
   formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>')
   
   // Обрабатываем переносы строк для HTML
   formatted = formatted.replace(/\n/g, '<br>')
   
-  return formatted
+  // Убираем лишние пустые строки
+  formatted = formatted.replace(/(<br\s*\/?>\s*){3,}/g, '<br><br>')
+  
+  return formatted.trim()
 }
 </script>
 

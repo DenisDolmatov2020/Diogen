@@ -9,7 +9,7 @@
 # Редиректы для API
 [[redirects]]
   from = "/api/*"
-  to = "http://194.87.143.218:8901/:splat"
+  to = "https://knowledge.slovo-soft.ru/:splat"
   status = 200
   force = true
   

@@ -1,6 +1,6 @@
 # API redirects for Netlify
-/api/v1/mentorium  http://194.87.143.218:8901/api/v1/mentorium  200
-/api/*  http://194.87.143.218:8901/api/:splat  200
+/api/v1/mentorium  https://knowledge.slovo-soft.ru/api/v1/mentorium  200
+/api/*  https://knowledge.slovo-soft.ru/api/:splat  200
 
 # SPA fallback
 /*  /index.html  200 
