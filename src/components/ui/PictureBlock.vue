@@ -39,7 +39,7 @@
             <p>❌ Не удалось загрузить изображение</p>
             
             <!-- Специальное сообщение для Mixed Content -->
-            <div v-if="window.location.protocol === 'https:' && getPictureData(item.data).src.startsWith('http:')" class="mixed-content-warning">
+            <div v-if="isMixedContent(getPictureData(item.data).src)" class="mixed-content-warning">
               <p class="text-xs">⚠️ Проблема безопасности: HTTP контент на HTTPS сайте</p>
             </div>
             
@@ -55,7 +55,7 @@
             
             <!-- Кнопка для попытки принудительной загрузки -->
             <button 
-              v-if="window.location.protocol === 'https:' && getPictureData(item.data).src.includes('http:')"
+              v-if="isMixedContent(getPictureData(item.data).src)"
               @click.stop="tryForceLoad(item.data)"
               class="force-load-button"
             >
@@ -151,7 +151,7 @@ function getPictureData(data: any): PictureData {
   }
   
   // Исправляем Mixed Content проблему
-  if (window.location.protocol === 'https:' && pictureData.src.startsWith('http:')) {
+  if (isMixedContent(pictureData.src)) {
     console.warn('🔒 Mixed Content обнаружен, пытаемся использовать HTTPS:', pictureData.src)
     const httpsUrl = pictureData.src.replace('http:', 'https:')
     console.log('🔄 Пробуем HTTPS версию:', httpsUrl)
@@ -248,9 +248,9 @@ function onImageError(event: Event) {
     complete: target.complete,
     currentSrc: target.currentSrc,
     crossOrigin: target.crossOrigin,
-    currentURL: window.location.href,
-    protocol: window.location.protocol,
-    isMixedContent: window.location.protocol === 'https:' && target.src.startsWith('http:')
+    currentURL: typeof window !== 'undefined' ? window.location.href : '',
+    protocol: typeof window !== 'undefined' ? window.location.protocol : '',
+    isMixedContent: isMixedContent(target.src)
   })
   
   // Добавляем в список ошибок
@@ -265,7 +265,7 @@ function onImageError(event: Event) {
       src: target.src,
       error: 'Не удалось загрузить изображение',
       component_id: props.data.component_id,
-      isMixedContent: window.location.protocol === 'https:' && target.src.startsWith('http:')
+      isMixedContent: isMixedContent(target.src)
     }
   })
 }
@@ -336,6 +336,11 @@ function tryForceLoad(data: any) {
     }
     testImg.src = urlWithCache
   }
+}
+
+// Проверяем, является ли URL HTTP в HTTPS контексте (Mixed Content)
+function isMixedContent(src: string): boolean {
+  return typeof window !== 'undefined' && window.location.protocol === 'https:' && src.startsWith('http:')
 }
 </script>
 

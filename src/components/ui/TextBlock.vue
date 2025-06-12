@@ -33,7 +33,7 @@
         
         <!-- Режим просмотра для readonly элементов -->
         <div v-else class="text-content">
-          <div v-html="formatText(item.data)"></div>
+          <div v-html="formatText(item.data?.toString())"></div>
         </div>
         
         <!-- Скрытые данные -->
@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, reactive } from 'vue'
-import type { TreeBlock, Item, ItemData } from '@/types/block'
+import type { TreeBlock, Item } from '@/types/block'
 
 const props = defineProps<{
   data: TreeBlock
