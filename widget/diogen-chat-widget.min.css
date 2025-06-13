@@ -13,6 +13,7 @@
     --diogen-z-index: 999999;
 }
 
+
 /* Кнопка чата */
 .diogen-chat-button {
     position: fixed;
@@ -69,11 +70,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    justify-content: end;
 }
 
 /* Контейнер чата */
@@ -82,6 +81,7 @@
     border-radius: var(--diogen-border-radius);
     box-shadow: var(--diogen-shadow);
     width: 100%;
+    margin-right: 2vw;
     max-width: var(--diogen-width, 508px);
     height: var(--diogen-height, 552px);
     max-height: 90vh;
@@ -217,15 +217,12 @@
 
 /* Сообщения пользователя */
 .diogen-user-message .diogen-message-content {
-    color: var(--diogen-text-color);
-    background: var(--diogen-user-bg);
-    border: 1px solid var(--diogen-border-color);
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     border-bottom-right-radius: 4px;
     border-bottom-left-radius: 16px;
-    padding: 12px;
-    min-width: 280px;
+    padding-left: 12px;
+    min-width: 250px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -237,7 +234,7 @@
     color: var(--diogen-text-color);
     border-radius: 16px;
     border-bottom-left-radius: 4px;
-    padding: 16px 4px;
+    padding: 12px 16px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -249,6 +246,17 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
+}
+
+.diogen-user-message .diogen-message-text {
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 16px;
+    padding: 12px;
+    color: var(--diogen-text-color);
+    background: var(--diogen-user-bg);
+    border: 1px solid var(--diogen-border-color);
 }
 
 /* Индикатор загрузки */
