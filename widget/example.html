@@ -192,10 +192,10 @@
             <p>Добавьте эти строки перед закрывающим тегом <code>&lt;/body&gt;</code>:</p>
             <div class="code-block">
 &lt;!-- Стили виджета --&gt;
-&lt;link rel="stylesheet" href="https://your-domain.com/diogen-chat-widget.min.css"&gt;
+&lt;link rel="stylesheet" href="https://your-domain.com/diogen-chat-widget.css"&gt;
 
 &lt;!-- Скрипт виджета --&gt;
-&lt;script src="https://your-domain.com/diogen-chat-widget.min.js" 
+&lt;script src="https://your-domain.com/diogen-chat-widget.js" 
         data-diogen-project="<span class="highlight">YOUR_PROJECT_ID</span>"&gt;&lt;/script&gt;
             </div>
         </div>
@@ -203,12 +203,10 @@
         <div class="demo-section">
             <h2>⚙️ Расширенная настройка</h2>
             <div class="code-block">
-&lt;script src="https://your-domain.com/diogen-chat-widget.min.js" 
-        data-diogen-project="<span class="highlight">pfki</span>"
-        data-diogen-position="bottom-right"
-        data-diogen-button-size="60px"
-        data-diogen-width="520px"
-        data-diogen-height="600px"&gt;&lt;/script&gt;
+&lt;script src="https://your-domain.com/diogen-chat-widget.js"
+        data-diogen-project="pfki"
+        data-diogen-width="600px"
+        data-diogen-height="700px"&gt;&lt;/script&gt;
             </div>
         </div>
         
@@ -284,9 +282,9 @@ DiogenChat.destroy();
         </div>
     </div>
 
-    <!-- Подключение виджета -->
-    <link rel="stylesheet" href="diogen-chat-widget.min.css">
-    <script src="diogen-chat-widget.min.js" data-diogen-project="pfki"></script>
+    <!-- Виджет чата -->
+    <link rel="stylesheet" href="diogen-chat-widget.css">
+    <script src="diogen-chat-widget.js" data-diogen-project="pfki"></script>
     
     <script>
         function toggleFullscreen() {
