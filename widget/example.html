@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diogen Chat Widget - Демо</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .demo-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .demo-section h2 {
+            color: #007bff;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 15px 0;
+        }
+        
+        .highlight {
+            background: #ffeaa7;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .feature-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .feature-item h3 {
+            color: #007bff;
+            margin-top: 0;
+            font-size: 1.1em;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .controls button {
+            margin: 0 10px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .demo-section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Diogen Chat Widget</h1>
+        
+        <div class="status success">
+            ✅ Виджет успешно загружен! Встроенный чат готов к работе.
+        </div>
+        
+        <div class="demo-section">
+            <h2>🚀 Новые возможности</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h3>💬 Встроенный чат</h3>
+                    <p>Полноценный чат без iframe - быстрее и надежнее</p>
+                </div>
+                <div class="feature-item">
+                    <h3>🎨 Красивый интерфейс</h3>
+                    <p>Современный дизайн с анимациями и адаптивностью</p>
+                </div>
+                <div class="feature-item">
+                    <h3>⚡ Высокая производительность</h3>
+                    <p>Оптимизированный код, быстрая загрузка</p>
+                </div>
+                <div class="feature-item">
+                    <h3>📱 Мобильная версия</h3>
+                    <p>Отлично работает на всех устройствах</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📋 Базовая интеграция</h2>
+            <p>Добавьте эти строки перед закрывающим тегом <code>&lt;/body&gt;</code>:</p>
+            <div class="code-block">
+&lt;!-- Стили виджета --&gt;
+&lt;link rel="stylesheet" href="https://your-domain.com/diogen-chat-widget.min.css"&gt;
+
+&lt;!-- Скрипт виджета --&gt;
+&lt;script src="https://your-domain.com/diogen-chat-widget.min.js" 
+        data-diogen-project="<span class="highlight">YOUR_PROJECT_ID</span>"&gt;&lt;/script&gt;
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>⚙️ Расширенная настройка</h2>
+            <div class="code-block">
+&lt;script src="https://your-domain.com/diogen-chat-widget.min.js" 
+        data-diogen-project="<span class="highlight">pfki</span>"
+        data-diogen-position="bottom-right"
+        data-diogen-button-size="60px"
+        data-diogen-width="520px"
+        data-diogen-height="600px"&gt;&lt;/script&gt;
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎨 Кастомизация цветов</h2>
+            <div class="code-block">
+&lt;style&gt;
+:root {
+    --diogen-primary-color: #28a745;
+    --diogen-primary-hover: #218838;
+    --diogen-button-size: 70px;
+}
+&lt;/style&gt;
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🔧 JavaScript API</h2>
+            <div class="code-block">
+// Открыть чат программно
+DiogenChat.openChat();
+
+// Закрыть чат
+DiogenChat.closeChat();
+
+// Сменить проект
+DiogenChat.setProject('new_project_id');
+
+// Удалить виджет
+DiogenChat.destroy();
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="DiogenChat.openChat()">
+                Открыть чат
+            </button>
+            <button class="btn btn-secondary" onclick="DiogenChat.closeChat()">
+                Закрыть чат
+            </button>
+            <button class="btn btn-secondary" onclick="toggleFullscreen()">
+                Полный экран
+            </button>
+        </div>
+        
+        <div class="status info">
+            💡 <strong>Совет:</strong> Нажмите на кнопку чата в правом нижнем углу или используйте кнопки выше для тестирования.
+        </div>
+        
+        <div class="demo-section">
+            <h2>📊 Технические характеристики</h2>
+            <ul>
+                <li><strong>Размер JS:</strong> ~13 KB (сжатый)</li>
+                <li><strong>Размер CSS:</strong> ~7 KB (сжатый)</li>
+                <li><strong>Общий размер:</strong> ~20 KB</li>
+                <li><strong>Поддержка браузеров:</strong> Chrome 60+, Firefox 55+, Safari 12+, Edge 79+</li>
+                <li><strong>Мобильные устройства:</strong> iOS 12+, Android 7+</li>
+                <li><strong>Время загрузки:</strong> &lt; 100ms</li>
+            </ul>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🌟 Преимущества новой версии</h2>
+            <ul>
+                <li>✅ <strong>Без iframe</strong> - прямое взаимодействие с API</li>
+                <li>✅ <strong>Быстрая загрузка</strong> - оптимизированный код</li>
+                <li>✅ <strong>Лучшая безопасность</strong> - нет внешних фреймов</li>
+                <li>✅ <strong>Полная кастомизация</strong> - CSS переменные</li>
+                <li>✅ <strong>Адаптивный дизайн</strong> - работает на всех устройствах</li>
+                <li>✅ <strong>Анимации</strong> - плавные переходы и эффекты</li>
+                <li>✅ <strong>Accessibility</strong> - поддержка клавиатуры и скринридеров</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Подключение виджета -->
+    <link rel="stylesheet" href="diogen-chat-widget.min.css">
+    <script src="diogen-chat-widget.min.js" data-diogen-project="pfki"></script>
+    
+    <script>
+        function toggleFullscreen() {
+            if (DiogenChat && DiogenChat.isOpen) {
+                DiogenChat.toggleFullscreen();
+            } else {
+                alert('Сначала откройте чат!');
+            }
+        }
+        
+        // Демонстрация событий
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Diogen Chat Widget загружен!');
+            console.log('📱 Доступные методы:', Object.getOwnPropertyNames(DiogenChat.__proto__));
+        });
+    </script>
+</body>
+</html> 

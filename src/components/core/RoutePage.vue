@@ -277,13 +277,13 @@ onMounted(() => {
             </div>
           </div>
           <iframe 
-            src="https://diogen.netlify.app/chat?hideMenuIcon=true"
+            src="https://diogen.netlify.app/chat?hideMenuIcon=true&project=pfki"
             width="508"
             height="552"
             frameborder="0"
             class="iframe-content"
             title="Чат-бот"
-          ></iframe>
+          />
         </div>
       </div>
     </Transition>

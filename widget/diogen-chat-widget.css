@@ -1,0 +1,531 @@
+/* Diogen Chat Widget Styles - адаптированные из ChatPage.vue */
+:root {
+    --diogen-primary-color: #33AFE1;
+    --diogen-primary-hover: #2A9BC7;
+    --diogen-text-color: #231F1F;
+    --diogen-bg-color: #F1F4F7;
+    --diogen-surface-bg: #ffffff;
+    --diogen-user-bg: #F5F0EA;
+    --diogen-border-color: #E5E7EB;
+    --diogen-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --diogen-border-radius: 12px;
+    --diogen-font-family: 'Golos Text', system-ui, -apple-system, sans-serif;
+    --diogen-z-index: 999999;
+}
+
+/* Кнопка чата */
+.diogen-chat-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: var(--diogen-button-size, 60px);
+    height: var(--diogen-button-size, 60px);
+    background: var(--diogen-primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--diogen-shadow);
+    transition: all 0.3s ease;
+    z-index: var(--diogen-z-index);
+    color: white;
+    font-family: var(--diogen-font-family);
+}
+
+.diogen-chat-button:hover {
+    background: var(--diogen-primary-hover);
+    transform: scale(1.05);
+}
+
+.diogen-chat-button-hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
+
+/* Модальное окно */
+.diogen-chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: var(--diogen-z-index);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    font-family: var(--diogen-font-family);
+}
+
+.diogen-chat-modal.diogen-chat-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.diogen-chat-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Контейнер чата */
+.diogen-chat-container {
+    background: var(--diogen-bg-color);
+    border-radius: var(--diogen-border-radius);
+    box-shadow: var(--diogen-shadow);
+    width: 100%;
+    max-width: var(--diogen-width, 508px);
+    height: var(--diogen-height, 552px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.diogen-chat-open .diogen-chat-container {
+    transform: scale(1);
+}
+
+.diogen-chat-fullscreen {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    width: 95vw !important;
+    height: 95vh !important;
+}
+
+/* Заголовок - 10% высоты */
+.diogen-chat-header {
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--diogen-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--diogen-surface-bg);
+    flex-shrink: 0;
+}
+
+.diogen-chat-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--diogen-text-color);
+    font-family: var(--diogen-font-family);
+    line-height: 1.2;
+}
+
+.diogen-chat-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.diogen-chat-controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    color: #666;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.diogen-chat-controls button:hover {
+    background: #f5f5f5;
+    color: var(--diogen-text-color);
+}
+
+/* Контент чата - 80% высоты */
+.diogen-chat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+/* Область сообщений */
+.diogen-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+/* Контейнер сообщений */
+.diogen-messages-container {
+    padding: 16px;
+    min-height: 100%;
+    padding-bottom: 100px; /* Отступ для поля ввода */
+}
+
+/* Плейсхолдер в центре */
+.diogen-chat-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diogen-chat-placeholder p {
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Сообщения */
+.diogen-message {
+    display: flex;
+    margin: 16px 0;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+.diogen-user-message {
+    justify-content: flex-end;
+}
+
+.diogen-bot-message {
+    justify-content: flex-start;
+}
+
+.diogen-message-content {
+    max-width: 384px;
+}
+
+/* Сообщения пользователя */
+.diogen-user-message .diogen-message-content {
+    color: var(--diogen-text-color);
+    background: var(--diogen-user-bg);
+    border: 1px solid var(--diogen-border-color);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 16px;
+    padding: 12px;
+    min-width: 280px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/* Сообщения бота */
+.diogen-bot-message .diogen-message-content {
+    color: var(--diogen-text-color);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 16px 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.diogen-message-text {
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* Индикатор загрузки */
+.diogen-loading-message .diogen-message-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diogen-loading-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.diogen-loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: #9CA3AF;
+    border-radius: 50%;
+    animation: loadingDots 1.4s infinite ease-in-out;
+}
+
+.diogen-loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.diogen-loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Кнопки действий в чате */
+.diogen-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.diogen-action-button {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: var(--diogen-font-family);
+    line-height: 1.2;
+    letter-spacing: 0;
+    transition: all 0.2s ease;
+    border: 0;
+    min-width: 67px;
+    gap: 12px;
+    border-radius: 20px;
+    padding: 14px 22px;
+    background: var(--diogen-primary-color);
+    color: white;
+    cursor: pointer;
+    margin-right: 12px;
+    margin-bottom: 8px;
+}
+
+.diogen-action-button:hover {
+    background: var(--diogen-primary-hover);
+}
+
+/* Поле ввода - 10% высоты */
+.diogen-chat-input-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    min-height: 80px;
+    max-height: 80px;
+    background: var(--diogen-bg-color);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.diogen-input-container {
+    height: 100%;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+}
+
+.diogen-input-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--diogen-surface-bg);
+    border-radius: 50px;
+    border: 1px solid #D1D5DB;
+    padding-left: 24px;
+    padding-right: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.diogen-input-wrapper:focus-within {
+    border-color: var(--diogen-primary-color);
+    box-shadow: 0 0 0 3px rgba(51, 175, 225, 0.1);
+}
+
+.diogen-input-field {
+    flex: 1;
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 14px;
+    min-height: 32px;
+    max-height: 32px;
+    line-height: 32px;
+    color: #333333;
+    font-family: var(--diogen-font-family);
+}
+
+.diogen-input-field::placeholder {
+    color: #9CA3AF;
+}
+
+.diogen-send-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.diogen-send-button:hover:not(:disabled) {
+    background: rgba(51, 175, 225, 0.1);
+}
+
+.diogen-send-button:disabled {
+    cursor: not-allowed;
+}
+
+/* Анимации */
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Скроллбар */
+.diogen-chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Стили для ссылок в чате */
+.diogen-chat-link {
+    color: #0053DA;
+    text-decoration: underline;
+    transition: opacity 0.2s ease;
+}
+
+.diogen-chat-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .diogen-chat-overlay {
+        padding: 10px;
+    }
+    
+    .diogen-chat-container {
+        max-width: 100%;
+        max-height: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+    
+    .diogen-chat-button {
+        bottom: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .diogen-message-content {
+        max-width: calc(100vw - 80px);
+    }
+    
+    .diogen-messages-container {
+        padding: 12px;
+    }
+    
+    .diogen-input-container {
+        padding: 8px 12px;
+    }
+    
+    .diogen-action-button {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 18px;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .diogen-chat-header {
+        height: 50px;
+        min-height: 50px;
+        max-height: 50px;
+        padding: 0 16px;
+    }
+    
+    .diogen-chat-title {
+        font-size: 16px;
+    }
+    
+    .diogen-message-content {
+        max-width: calc(100vw - 60px);
+    }
+    
+    .diogen-input-field {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --diogen-text-color: #ffffff;
+        --diogen-bg-color: #1a1a1a;
+        --diogen-surface-bg: #2d2d2d;
+        --diogen-border-color: #404040;
+    }
+    
+    .diogen-bot-message .diogen-message-content {
+        background: var(--diogen-surface-bg);
+    }
+    
+    .diogen-input-wrapper {
+        background: var(--diogen-surface-bg);
+        border-color: var(--diogen-border-color);
+    }
+    
+    .diogen-chat-controls button:hover {
+        background: #404040;
+    }
+    
+    .diogen-chat-placeholder p {
+        color: #888;
+    }
+} 
