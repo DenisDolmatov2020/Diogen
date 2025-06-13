@@ -3,7 +3,7 @@
     
     // Конфигурация по умолчанию
     const DEFAULT_CONFIG = {
-        apiUrl: 'https://diogen.netlify.app/api/v1/mentorium',
+        apiUrl: 'https://knowledge.slovo-soft.ru/api/v1/mentorium',
         width: '508px',
         height: '552px',
         buttonSize: '60px',
