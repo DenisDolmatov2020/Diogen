@@ -1009,23 +1009,9 @@
         
         // Определяем, нужен ли прокси
         shouldUseProxy() {
-            // Простая логика: используем прокси для всех внешних API
-            const currentOrigin = window.location.origin;
-            const apiUrl = new URL(this.config.apiUrl);
-            const apiOrigin = apiUrl.origin;
-            
-            // Если API на том же домене, прокси не нужен
-            const isDifferentOrigin = apiOrigin !== currentOrigin;
-            
-            console.log('🔄 Определение необходимости прокси:', {
-                currentOrigin,
-                apiOrigin,
-                isDifferentOrigin,
-                shouldUse: isDifferentOrigin,
-                note: isDifferentOrigin ? 'Используем прокси для внешнего API' : 'Прямое подключение к тому же домену'
-            });
-            
-            return isDifferentOrigin;
+            const isLocalhost = window.location.hostname === 'localhost';
+            console.log(`[Diogen] Hostname: ${window.location.hostname}, использует прокси: ${isLocalhost}`);
+            return isLocalhost;
         }
         
         // Генерируем URL для прокси
@@ -1559,21 +1545,14 @@
                 let errorMessage = 'Извините, произошла ошибка при отправке сообщения.';
                 
                 if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-                    if (this.shouldUseProxy()) {
-                        const isLocalhost = window.location.hostname === 'localhost' || 
-                                           window.location.hostname === '127.0.0.1' ||
-                                           window.location.hostname.includes('localhost');
-                        
-                        if (isLocalhost) {
-                            // Dev режим - показываем инструкции по настройке прокси
-                            errorMessage = `Ошибка CORS в dev режиме. Убедитесь что dev сервер запущен и настроен прокси в vite.config.js`;
-                        } else {
-                            // Продакшен с прокси
-                            errorMessage = 'Ошибка подключения через прокси. Возможно, прокси сервис недоступен или API сервер не отвечает.';
-                        }
+                    const isLocalhost = window.location.hostname === 'localhost';
+                    
+                    if (isLocalhost) {
+                        // Dev режим - показываем инструкции по настройке прокси
+                        errorMessage = `Ошибка CORS в dev режиме. Убедитесь что dev сервер запущен и настроен прокси в vite.config.js`;
                     } else {
-                        // Прямое подключение - показываем общее сообщение
-                        errorMessage = 'Ошибка подключения к серверу. Возможно, сервер недоступен или есть проблемы с CORS.';
+                        // Продакшен - прямые запросы, нужно настроить CORS на бэкенде
+                        errorMessage = `Ошибка CORS. Необходимо настроить CORS на API сервере для домена: ${window.location.origin}`;
                     }
                 }
                 
