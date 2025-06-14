@@ -51,7 +51,7 @@
             this.isFullscreen = false;
             this.messages = [];
             this.isLoading = false;
-            this.referenceId = this.generateReferenceId();
+            this.referenceId = this.getOrCreateReferenceId();
             this.currentTheme = this.getInitialTheme();
             this.init();
         }
@@ -63,6 +63,28 @@
             this.applyCustomStyles();
         }
         
+        getOrCreateReferenceId() {
+            // Ключ для localStorage с учетом проекта и пользователя
+            const storageKey = `diogen-reference-id-${this.config.projectId}-${this.config.userId}`;
+            
+            // Пытаемся получить существующий reference_id из localStorage
+            const existingReferenceId = localStorage.getItem(storageKey);
+            
+            if (existingReferenceId) {
+                console.log('🔄 Используем существующий reference_id из localStorage:', existingReferenceId);
+                return existingReferenceId;
+            }
+            
+            // Если нет сохраненного reference_id, генерируем новый
+            const newReferenceId = this.generateReferenceId();
+            
+            // Сохраняем в localStorage
+            localStorage.setItem(storageKey, newReferenceId);
+            console.log('🆕 Создан и сохранен новый reference_id:', newReferenceId);
+            
+            return newReferenceId;
+        }
+        
         generateReferenceId() {
             // Генерируем reference_id в формате PROJECT_ID.USER_ID.TIMESTAMP
             const projectId = this.config.projectId || '000';
@@ -70,9 +92,29 @@
             const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp в секундах
             
             const referenceId = `${projectId}.${userId}.${timestamp}`;
-            console.log('🆔 Генерируем reference_id:', referenceId);
+            console.log('🆔 Генерируем новый reference_id:', referenceId);
             
             return referenceId;
+        }
+        
+        // Метод для принудительного обновления reference_id
+        resetReferenceId() {
+            const storageKey = `diogen-reference-id-${this.config.projectId}-${this.config.userId}`;
+            
+            // Удаляем старый reference_id
+            localStorage.removeItem(storageKey);
+            console.log('🗑️ Удален старый reference_id из localStorage');
+            
+            // Генерируем и сохраняем новый
+            this.referenceId = this.getOrCreateReferenceId();
+            console.log('🔄 Reference_id обновлен на:', this.referenceId);
+            
+            return this.referenceId;
+        }
+        
+        // Метод для получения текущего reference_id
+        getCurrentReferenceId() {
+            return this.referenceId;
         }
         
         // Определяем, нужен ли прокси
@@ -491,7 +533,7 @@
         
         sendMessage(messageText = null) {
             const text = messageText || this.inputField.value.trim();
-            if (!text) return;
+            if (!text || this.isLoading) return; // Блокируем если уже идет загрузка
 
             // Отображаем сообщение пользователя
             this.renderMessage(text, true);
@@ -507,7 +549,15 @@
         }
         
         async callChatAPI(message) {
+            if (this.isLoading) return; // Предотвращаем повторные запросы
+            
             try {
+                // Устанавливаем флаг загрузки
+                this.isLoading = true;
+                this.updateSendButton();
+                this.disableInput();
+                this.disableActionButtons();
+                
                 // Показываем индикатор загрузки
                 this.showLoadingMessage();
                 
@@ -523,12 +573,13 @@
                         },
                         {
                             variable: "reference_id",
-                            data: this.generateReferenceId()
+                            data: this.referenceId
                         }
                     ]
                 }];
                 
-                console.log('📤 Отправляем запрос:', JSON.stringify(payload, null, 2));
+                console.log('📤 Отправляем запрос с reference_id:', this.referenceId);
+                console.log('📤 Полный payload:', JSON.stringify(payload, null, 2));
                 
                 const response = await fetch(this.getApiUrl(), {
                     method: 'POST',
@@ -546,7 +597,7 @@
                 }
 
                 const data = await response.json();
-                console.log('📥 Получен ответ:', data);
+                console.log('📥 Получен ответ от сервера:', data);
                 this.processServerResponse(data);
                 
             } catch (error) {
@@ -583,6 +634,12 @@
                     console.log(`}`);
                     console.groupEnd();
                 }
+            } finally {
+                // Всегда снимаем флаг загрузки
+                this.isLoading = false;
+                this.updateSendButton();
+                this.enableInput();
+                this.enableActionButtons();
             }
         }
         
@@ -611,38 +668,146 @@
         
         processServerResponse(data) {
             this.hideLoadingMessage();
+            console.log('📥 Получен ответ от сервера:', data);
             
             // Обрабатываем ответ в формате массива
             if (Array.isArray(data) && data.length > 0) {
-                const responseItem = data[0];
-                
-                // Ищем сообщение в items
-                if (responseItem.items && responseItem.items.length > 0) {
-                    for (const item of responseItem.items) {
-                        if (item.meta && item.meta.variable === 'output_text' && item.meta.data) {
-                            this.renderMessage(item.meta.data, false);
-                            return;
-                        }
+                // Обрабатываем каждый компонент ответа
+                data.forEach(component => {
+                    if (component.component_name === 'text_block' && component.items && component.items.length > 0) {
+                        // Обрабатываем текстовые блоки
+                        component.items.forEach(item => {
+                            if (item.data) {
+                                console.log('📝 Отображаем текст:', item.data);
+                                this.renderMessage(item.data, false);
+                            }
+                        });
+                    } else if (component.component_name === 'action_button' && component.items && component.items.length > 0) {
+                        // Обрабатываем кнопки действий
+                        console.log('🔘 Отображаем кнопки:', component.items);
+                        this.renderActionButtons(component.items);
+                    } else if (component.component_name === 'picture_block' && component.items && component.items.length > 0) {
+                        // Обрабатываем изображения
+                        console.log('🖼️ Отображаем изображения:', component.items);
+                        this.renderPictureBlock(component.items);
                     }
-                }
+                });
                 
-                // Если не нашли output_text, показываем общий ответ
-                if (responseItem.message) {
-                    this.renderMessage(responseItem.message, false);
-                } else {
-                    this.renderMessage('Получен ответ от сервера, но не удалось извлечь текст сообщения.', false);
-                }
-            } else if (data.message) {
-                // Обратная совместимость со старым форматом
-                this.renderMessage(data.message, false);
-            } else {
-                this.renderMessage('Получен некорректный ответ от сервера.', false);
+                return; // Успешно обработали ответ
             }
             
-            // Обрабатываем действия, если есть
-            if (data.actions && data.actions.length > 0) {
-                this.renderActionButtons(data.actions);
+            // Обратная совместимость со старым форматом
+            if (data.message) {
+                this.renderMessage(data.message, false);
+                return;
             }
+            
+            // Если ничего не смогли извлечь
+            console.warn('⚠️ Не удалось обработать ответ сервера:', data);
+            this.renderMessage('Получен ответ от сервера, но не удалось извлечь текст сообщения.', false);
+        }
+        
+        renderPictureBlock(pictures) {
+            if (!pictures || pictures.length === 0) return;
+            
+            const picturesDiv = document.createElement('div');
+            picturesDiv.className = 'diogen-message diogen-bot-message';
+            
+            let picturesHtml = '<div class="diogen-message-content"><div class="diogen-pictures-container">';
+            
+            // Генерируем уникальные ID для каждого изображения
+            const imageIds = [];
+            
+            pictures.forEach((picture, index) => {
+                const pictureData = this.getPictureData(picture.data);
+                const title = picture.title || '';
+                
+                console.log('🖼️ Обрабатываем изображение:', pictureData);
+                
+                if (pictureData.src) {
+                    const imageId = `diogen-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`;
+                    imageIds.push({ id: imageId, data: pictureData });
+                    
+                    picturesHtml += `
+                        <div class="diogen-picture-item">
+                            <div class="diogen-image-container" id="container-${imageId}">
+                                <img 
+                                    id="${imageId}"
+                                    src="${pictureData.src}" 
+                                    alt="${pictureData.alt || title || 'Изображение'}"
+                                    class="diogen-picture-image"
+                                />
+                            </div>
+                            ${title ? `<div class="diogen-picture-title">${this.formatMessageText(title)}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    picturesHtml += `
+                        <div class="diogen-picture-item">
+                            <div class="diogen-image-error">
+                                ❌ Нет ссылки на изображение
+                                <pre>${JSON.stringify(picture.data, null, 2)}</pre>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            picturesHtml += '</div></div>';
+            picturesDiv.innerHTML = picturesHtml;
+            
+            this.messagesContainer.appendChild(picturesDiv);
+            
+            // Добавляем обработчики событий для изображений после создания DOM
+            imageIds.forEach(({ id, data }) => {
+                const imgElement = document.getElementById(id);
+                const containerElement = document.getElementById(`container-${id}`);
+                
+                if (imgElement && containerElement) {
+                    // Обработчик успешной загрузки
+                    imgElement.addEventListener('load', () => {
+                        console.log('✅ Изображение загружено:', data.src);
+                        imgElement.style.cursor = 'pointer';
+                    });
+                    
+                    // Обработчик ошибки загрузки
+                    imgElement.addEventListener('error', () => {
+                        console.error('❌ Ошибка загрузки изображения:', data.src);
+                        containerElement.innerHTML = `
+                            <div class="diogen-image-error">
+                                ❌ Не удалось загрузить изображение<br>
+                                <a href="${data.src}" target="_blank">${data.src}</a>
+                            </div>
+                        `;
+                    });
+                    
+                    // Обработчик клика для открытия в новой вкладке
+                    imgElement.addEventListener('click', () => {
+                        window.open(data.src, '_blank');
+                    });
+                }
+            });
+            
+            this.scrollToBottom();
+        }
+        
+        getPictureData(data) {
+            console.log('🖼️ Получаем данные изображения:', data);
+            
+            if (typeof data === 'object' && data !== null && data.src) {
+                return {
+                    src: data.src,
+                    alt: data.alt || ''
+                };
+            } else if (typeof data === 'string' && data.trim()) {
+                return {
+                    src: data.trim(),
+                    alt: ''
+                };
+            }
+            
+            console.warn('⚠️ Некорректные данные изображения:', data);
+            return { src: '', alt: '' };
         }
         
         renderActionButtons(actions) {
@@ -653,7 +818,10 @@
             
             let buttonsHtml = '<div class="diogen-message-content"><div class="diogen-action-buttons">';
             actions.forEach(action => {
-                buttonsHtml += `<button class="diogen-action-button" data-action="${action.value}">${action.label}</button>`;
+                // Новый формат: action.title
+                const buttonText = action.title || action.label || 'Действие';
+                const buttonValue = action.value || action.title || buttonText;
+                buttonsHtml += `<button class="diogen-action-button" data-action="${buttonValue}">${buttonText}</button>`;
             });
             buttonsHtml += '</div></div>';
             
@@ -664,6 +832,7 @@
             actionsDiv.querySelectorAll('.diogen-action-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const action = e.target.getAttribute('data-action');
+                    console.log('🔘 Нажата кнопка:', action);
                     this.handleActionClick(action);
                 });
             });
@@ -717,6 +886,21 @@
         
         getConfig() {
             return { ...this.config };
+        }
+        
+        // Методы для управления reference_id
+        getReferenceId() {
+            return this.getCurrentReferenceId();
+        }
+        
+        newReferenceId() {
+            return this.resetReferenceId();
+        }
+        
+        clearReferenceId() {
+            const storageKey = `diogen-reference-id-${this.config.projectId}-${this.config.userId}`;
+            localStorage.removeItem(storageKey);
+            console.log('🗑️ Reference_id удален из localStorage');
         }
         
         destroy() {
@@ -825,6 +1009,30 @@
                     button.style.right = this.config.rightOffset || '20px';
                     break;
             }
+        }
+        
+        disableInput() {
+            this.inputField.disabled = true;
+            this.sendButton.disabled = true;
+        }
+        
+        enableInput() {
+            this.inputField.disabled = false;
+            this.sendButton.disabled = false;
+        }
+        
+        disableActionButtons() {
+            const actionButtons = this.messagesContainer.querySelectorAll('.diogen-action-button');
+            actionButtons.forEach(button => {
+                button.disabled = true;
+            });
+        }
+        
+        enableActionButtons() {
+            const actionButtons = this.messagesContainer.querySelectorAll('.diogen-action-button');
+            actionButtons.forEach(button => {
+                button.disabled = false;
+            });
         }
     }
     
