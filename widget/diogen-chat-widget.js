@@ -1018,6 +1018,14 @@
             }
             
             // Автоматическое определение (devMode === 'auto')
+            const currentOrigin = window.location.origin;
+            const apiUrl = new URL(this.config.apiUrl);
+            const apiOrigin = apiUrl.origin;
+            
+            // Используем прокси если API находится на другом домене
+            const isDifferentOrigin = apiOrigin !== currentOrigin;
+            
+            // В режиме разработки (localhost) всегда используем прокси для внешних API
             const isLocalhost = window.location.hostname === 'localhost' || 
                                window.location.hostname === '127.0.0.1' ||
                                window.location.hostname.includes('localhost');
@@ -1026,9 +1034,22 @@
                              window.location.port === '3000' ||
                              window.location.port === '8080';
             
-            const isDifferentOrigin = !this.config.apiUrl.includes(window.location.origin);
+            // На продакшене используем прокси для внешних API
+            const isProduction = !isLocalhost;
             
-            return isLocalhost && isDevPort && isDifferentOrigin;
+            const shouldUse = isDifferentOrigin && (isProduction || (isLocalhost && isDevPort));
+            
+            console.log('🔄 Определение необходимости прокси:', {
+                currentOrigin,
+                apiOrigin,
+                isDifferentOrigin,
+                isLocalhost,
+                isDevPort,
+                isProduction,
+                shouldUse
+            });
+            
+            return shouldUse;
         }
         
         // Генерируем URL для прокси
