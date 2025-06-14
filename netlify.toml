@@ -47,6 +47,6 @@
 
 [[redirects]]
   from = "/"
-  to = "/test/backend_integration"
+  to = "/widget/example.html"
   status = 301
   force = false 

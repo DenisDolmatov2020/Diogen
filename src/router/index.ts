@@ -7,7 +7,7 @@ const router = createRouter({
     // Главная страница - редирект на список статей
     {
       path: '/',
-      redirect: '/test/backend_integration'
+      redirect: '/widget/example.html'
     },
     // Новая страница чата
     {
@@ -15,18 +15,7 @@ const router = createRouter({
       name: 'Chat',
       component: () => import('@/components/ChatPage.vue')
     },
-    // Демо интерактивной строки ввода
-    {
-      path: '/demo/input',
-      name: 'InputDemo',
-      component: () => import('@/components/InputDemo.vue')
-    },
-    // Демо чат-ввода
-    {
-      path: '/demo/chat-input',
-      name: 'ChatInputDemo',
-      component: () => import('@/components/ChatInputDemo.vue')
-    },
+
     // Reference ID Manager
     {
       path: '/reference-id',
