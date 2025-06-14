@@ -1054,8 +1054,8 @@
         
         // Генерируем URL для прокси
         generateProxyUrl() {
-            // Используем простой и предсказуемый путь
-            return '/api/widget-proxy';
+            // Используем функцию Netlify для прокси
+            return '/api/proxy';
         }
         
         // Получаем финальный URL для запроса
@@ -1549,8 +1549,9 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword),
-                        // Добавляем заголовок с реальным API URL для прокси
-                        'X-Target-URL': this.config.apiUrl
+                        // Заголовки для функции Netlify прокси
+                        'X-Target-URL': this.config.apiUrl,
+                        'X-TOKEN': btoa(this.config.basicLogin + ':' + this.config.basicPassword)
                     },
                     body: JSON.stringify(payload)
                 });

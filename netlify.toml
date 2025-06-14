@@ -6,10 +6,10 @@
 [build.environment]
   VITE_DEV_MODE = "true"
 
-# Специальный редирект для виджета чата
+# Редирект для прокси через функцию Netlify
 [[redirects]]
-  from = "/api/widget-proxy"
-  to = "https://knowledge.slovo-soft.ru/api/v1/mentorium"
+  from = "/api/proxy"
+  to = "/.netlify/functions/proxy"
   status = 200
   force = true
   
@@ -38,22 +38,14 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "frame-ancestors 'self' *.netlify.app"
 
-# Специальные заголовки для прокси виджета
-[[headers]]
-  for = "/api/widget-proxy"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Target-URL, X-TOKEN, X-Front-Token"
-    Access-Control-Max-Age = "86400"
-
 # Заголовки для API запросов
 [[headers]]
   for = "/api/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization, X-TOKEN, X-Front-Token"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Target-URL, X-TOKEN, X-Front-Token"
+    Access-Control-Max-Age = "86400"
 
 [[redirects]]
   from = "/test/*"
