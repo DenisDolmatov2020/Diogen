@@ -1009,15 +1009,14 @@
         
         // Определяем, нужен ли прокси
         shouldUseProxy() {
-            const isLocalhost = window.location.hostname === 'localhost';
-            console.log(`[Diogen] Hostname: ${window.location.hostname}, использует прокси: ${isLocalhost}`);
-            return isLocalhost;
+            // Логика упрощена: всегда используем единую точку входа /api/proxy
+            console.log('[Proxy Logic] Используем единую точку входа /api/proxy');
+            return true; 
         }
         
         // Генерируем URL для прокси
         generateProxyUrl() {
-            // Всегда используем /api/proxy (работает и в dev, и в production)
-            console.log('🔧 Используем прокси: /api/proxy');
+            // Всегда возвращаем один и тот же относительный путь
             return '/api/proxy';
         }
         
@@ -1475,109 +1474,83 @@
         }
         
         async callChatAPI(message) {
-            if (this.isLoading) return; // Предотвращаем повторные запросы
+            if (this.isLoading) {
+                console.warn("API вызов уже в процессе, новый запрос отменен.");
+                return;
+            }
+
+            this.showLoadingMessage();
             
-            try {
-                // Устанавливаем флаг загрузки
-                this.isLoading = true;
-                this.updateSendButton();
-                this.disableInput();
-                this.disableActionButtons();
-                
-                // Показываем индикатор загрузки
-                this.showLoadingMessage();
-                
-                // Формируем payload в правильном формате как в curl примере
-                const payload = [{
-                    component_name: "meta_data",
-                    parent_block_id: "block-0-1",
-                    action_mode: "dialog",
-                    action_params: [
-                        {
-                            variable: "input_text",
-                            data: message
-                        },
-                        {
-                            variable: "reference_id",
-                            data: this.referenceId
-                        }
-                    ]
-                }];
-                
-                console.log('📤 Отправляем запрос с reference_id:', this.referenceId);
-                console.log('📤 Полный payload:', JSON.stringify(payload, null, 2));
-                
-                // Формируем заголовки в зависимости от типа подключения
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                if (this.shouldUseProxy()) {
-                    // Используем прокси - передаем данные через специальные заголовки
-                    headers['X-Target-URL'] = this.config.apiUrl;
-                    headers['X-TOKEN'] = btoa(this.config.basicLogin + ':' + this.config.basicPassword);
-                    console.log('🔄 Используем прокси с заголовками:', headers);
-                } else {
-                    // Прямое подключение к API (если на том же домене)
-                    headers['Authorization'] = 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword);
-                    console.log('🔗 Прямое подключение с заголовками:', headers);
+            const apiUrl = this.getApiUrl();
+            const useProxy = this.shouldUseProxy();
+
+            const payload = [{
+                component_name: "meta_data",
+                parent_block_id: "block-0-1",
+                action_mode: "dialog",
+                action_params: [
+                    { variable: "input_text", data: message },
+                    { variable: "reference_id", data: this.getReferenceId() }
+                ]
+            }];
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            // При использовании прокси (Vite или Netlify) передаем
+            // целевой URL и токен через кастомные заголовки.
+            if (useProxy) {
+                headers['X-Target-URL'] = this.config.apiUrl;
+                if (this.config.apiToken) {
+                    headers['X-TOKEN'] = this.config.apiToken;
                 }
-                
-                const response = await fetch(this.getApiUrl(), {
+                console.log('[API Call] Используем прокси. Заголовки:', { 'X-Target-URL': headers['X-Target-URL'], 'X-TOKEN': headers['X-TOKEN'] ? 'exists' : 'missing' });
+            } else {
+                // Прямое подключение (этот блок теперь использоваться не будет)
+                if (this.config.apiToken) {
+                    headers['Authorization'] = `Basic ${btoa(this.config.apiToken)}`;
+                }
+                console.log('[API Call] Прямое подключение к API.');
+            }
+
+            console.log('Отправка на API:', {
+                url: apiUrl,
+                payload: JSON.stringify(payload, null, 2),
+                headers: Object.keys(headers)
+            });
+
+            try {
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({ error: "Не удалось прочитать тело ответа" }));
+                    throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
                 }
 
-                const data = await response.json();
-                console.log('📥 Получен ответ от сервера:', data);
-                this.processServerResponse(data);
-                
+                const responseData = await response.json();
+                this.processServerResponse(responseData);
+
             } catch (error) {
-                console.error('Ошибка при отправке сообщения:', error);
-                this.hideLoadingMessage();
+                console.error('❌ Ошибка при вызове API:', error);
                 
-                // Улучшенное сообщение об ошибке с инструкциями
-                let errorMessage = 'Извините, произошла ошибка при отправке сообщения.';
+                // Упрощенное сообщение об ошибке
+                const isLocalhost = window.location.hostname === 'localhost';
+                let errorMessage = `Произошла ошибка при подключении к серверу.`;
                 
-                if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-                    const isLocalhost = window.location.hostname === 'localhost';
-                    
-                    if (isLocalhost) {
-                        // Dev режим - показываем инструкции по настройке прокси
-                        errorMessage = `Ошибка CORS в dev режиме. Убедитесь что dev сервер запущен и настроен прокси в vite.config.js`;
-                    } else {
-                        // Продакшен - прямые запросы, нужно настроить CORS на бэкенде
-                        errorMessage = `Ошибка CORS. Необходимо настроить CORS на API сервере для домена: ${window.location.origin}`;
-                    }
+                if (isLocalhost) {
+                     errorMessage += ` Убедитесь, что ваш dev-сервер (Vite) запущен и прокси в vite.config.js настроен правильно.`;
+                } else {
+                     errorMessage += ` Проверьте статус функции Netlify и ее логи.`;
                 }
-                
-                this.renderMessage(errorMessage, false);
-                
-                // Принудительный скролл после ошибки
-                this.forceScrollToLastMessage(100);
-                
-                // Дополнительная информация в консоль для разработчиков
-                if (this.shouldUseProxy()) {
-                    console.group('🔧 Инструкции по настройке прокси:');
-                    console.log('Добавьте в vite.config.js:');
-                    console.log(`'${this.generateProxyUrl()}': {`);
-                    console.log(`  target: '${this.config.apiUrl}',`);
-                    console.log(`  changeOrigin: true,`);
-                    console.log(`  secure: false`);
-                    console.log(`}`);
-                    console.groupEnd();
-                }
+
+                this.addMessage('bot', { type: 'error', content: errorMessage });
             } finally {
-                // Всегда снимаем флаг загрузки
-                this.isLoading = false;
-                this.updateSendButton();
-                this.enableInput();
-                this.enableActionButtons();
+                this.hideLoadingMessage();
             }
         }
         

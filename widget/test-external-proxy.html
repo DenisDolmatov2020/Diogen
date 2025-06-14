@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест виджета с внешним прокси</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .info-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status.external { background: #e3f2fd; color: #1976d2; }
+        .status.localhost { background: #f3e5f5; color: #7b1fa2; }
+        
+        .config-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .config-info h4 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        
+        .url-display {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: #f1f3f4;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+        
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        
+        .log-info { color: #4fc3f7; }
+        .log-success { color: #81c784; }
+        .log-error { color: #e57373; }
+        .log-warning { color: #ffb74d; }
+        
+        .widget-area {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Тест виджета с внешним прокси</h1>
+        
+        <div class="info-section">
+            <h3>📊 Информация о тестировании</h3>
+            <p><strong>Текущий домен:</strong> <span id="currentDomain"></span></p>
+            <p><strong>Режим:</strong> <span id="proxyMode" class="status"></span></p>
+            <p><strong>API URL:</strong> <span class="url-display" id="apiUrl"></span></p>
+            <p><strong>Прокси URL:</strong> <span class="url-display" id="proxyUrl"></span></p>
+        </div>
+        
+        <div class="config-info">
+            <h4>⚙️ Конфигурация прокси</h4>
+            <p>Для работы на удаленных доменах необходимо:</p>
+            <ol>
+                <li>Развернуть прокси-сервер (Railway/Render)</li>
+                <li>Обновить <code>externalProxyUrl</code> в конфигурации</li>
+                <li>Проверить работу через кнопки тестирования</li>
+            </ol>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="btn btn-primary" onclick="testProxyHealth()">🏥 Проверить прокси</button>
+            <button class="btn btn-success" onclick="testApiCall()">💬 Тест API</button>
+            <button class="btn btn-warning" onclick="testCorsHeaders()">🔒 Проверить CORS</button>
+            <button class="btn btn-danger" onclick="clearConsole()">🗑️ Очистить</button>
+        </div>
+        
+        <div class="console" id="console">
+            <div class="log-info">Консоль готова к тестированию...</div>
+        </div>
+        
+        <div class="widget-area">
+            <h3>🤖 Область виджета</h3>
+            <p>Виджет будет загружен здесь автоматически</p>
+            <div id="widget-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация для внешнего прокси
+        window.DIOGEN_CONFIG = {
+            apiUrl: 'https://knowledge.slovo-soft.ru/api/v1/mentorium',
+            externalProxyUrl: 'https://your-proxy-url.com/proxy', // ⚠️ ЗАМЕНИТЕ НА ВАШ URL
+            useExternalProxy: true,
+            projectId: 'diogen-test',
+            projectName: 'Diogen Test Widget',
+            width: 400,
+            height: 600
+        };
+
+        // Функции для отображения информации
+        function updateInfo() {
+            const domain = window.location.hostname;
+            const isLocalhost = domain === 'localhost';
+            
+            document.getElementById('currentDomain').textContent = domain;
+            document.getElementById('apiUrl').textContent = window.DIOGEN_CONFIG.apiUrl;
+            
+            const modeElement = document.getElementById('proxyMode');
+            const proxyUrlElement = document.getElementById('proxyUrl');
+            
+            if (isLocalhost) {
+                modeElement.textContent = 'Localhost (dev proxy)';
+                modeElement.className = 'status localhost';
+                proxyUrlElement.textContent = '/api/proxy';
+            } else {
+                modeElement.textContent = 'Remote (external proxy)';
+                modeElement.className = 'status external';
+                proxyUrlElement.textContent = window.DIOGEN_CONFIG.externalProxyUrl;
+            }
+        }
+
+        // Функции логирования
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '<div class="log-info">Консоль очищена...</div>';
+        }
+
+        // Тестовые функции
+        async function testProxyHealth() {
+            log('🏥 Проверка работы прокси-сервера...', 'info');
+            
+            const proxyBaseUrl = window.DIOGEN_CONFIG.externalProxyUrl.replace('/proxy', '');
+            const healthUrl = `${proxyBaseUrl}/health`;
+            
+            try {
+                const response = await fetch(healthUrl);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Прокси работает! Статус: ${data.status}, Uptime: ${data.uptime}s`, 'success');
+                } else {
+                    log(`❌ Ошибка прокси: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Не удалось подключиться к прокси: ${error.message}`, 'error');
+                log('💡 Убедитесь что прокси-сервер развернут и URL правильный', 'warning');
+            }
+        }
+
+        async function testApiCall() {
+            log('💬 Тестирование API вызова через прокси...', 'info');
+            
+            const payload = [{
+                component_name: "meta_data",
+                parent_block_id: "block-0-1",
+                action_mode: "dialog",
+                action_params: [
+                    { variable: "input_text", data: "Привет! Это тест виджета." },
+                    { variable: "reference_id", data: "000.3654823.1234567890" }
+                ]
+            }];
+
+            try {
+                const response = await fetch(window.DIOGEN_CONFIG.externalProxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Target-URL': window.DIOGEN_CONFIG.apiUrl,
+                        'X-TOKEN': btoa('pfki:pfki')
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                log(`📡 Ответ получен: ${response.status} ${response.statusText}`, 'info');
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ API вызов успешен!', 'success');
+                    log(`📄 Ответ: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    log(`❌ Ошибка API: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Ошибка при вызове API: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCorsHeaders() {
+            log('🔒 Проверка CORS заголовков...', 'info');
+            
+            try {
+                const response = await fetch(window.DIOGEN_CONFIG.externalProxyUrl, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type, X-Target-URL, X-TOKEN'
+                    }
+                });
+
+                log(`📡 OPTIONS запрос: ${response.status} ${response.statusText}`, 'info');
+                
+                // Проверяем CORS заголовки
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+
+                log('📋 CORS заголовки:', 'info');
+                Object.entries(corsHeaders).forEach(([key, value]) => {
+                    if (value) {
+                        log(`  ✅ ${key}: ${value}`, 'success');
+                    } else {
+                        log(`  ❌ ${key}: отсутствует`, 'error');
+                    }
+                });
+
+            } catch (error) {
+                log(`❌ Ошибка при проверке CORS: ${error.message}`, 'error');
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateInfo();
+            log('🚀 Страница загружена, готов к тестированию!', 'success');
+            
+            // Проверяем конфигурацию
+            if (window.DIOGEN_CONFIG.externalProxyUrl.includes('your-proxy-url.com')) {
+                log('⚠️ ВНИМАНИЕ: Необходимо обновить externalProxyUrl в конфигурации!', 'warning');
+                log('📝 Замените "your-proxy-url.com" на реальный URL вашего прокси', 'warning');
+            }
+        });
+    </script>
+
+    <!-- Загружаем виджет с внешним прокси -->
+    <script src="diogen-chat-widget-with-external-proxy.js"></script>
+</body>
+</html> 
