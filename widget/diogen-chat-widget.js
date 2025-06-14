@@ -9,8 +9,39 @@
         buttonSize: '60px',
         position: 'bottom-right',
         project: 'pfki',
+        projectId: '000', // Добавляем projectId для reference_id
+        userId: '3654823', // Добавляем userId для reference_id
         basicLogin: 'slsuser',
-        basicPassword: '20241001'
+        basicPassword: '20241001',
+        theme: 'auto', // 'light', 'dark', 'auto'
+        enableThemeToggle: true,
+        // Опции для разработки и прокси
+        devMode: 'auto', // 'auto', 'true', 'false' - автоматическое определение или принудительное
+        proxyPath: '/api/proxy', // Путь для прокси (будет добавлен хеш от URL)
+        // Кастомизация цветов
+        primaryColor: null,
+        primaryHoverColor: null,
+        textColor: null,
+        bgColor: null,
+        surfaceBgColor: null,
+        userBgColor: null,
+        borderColor: null,
+        borderRadius: null,
+        fontFamily: null,
+        inputRadius: null,
+        title: 'Чат-бот',
+        // Темная тема
+        darkPrimaryColor: null,
+        darkTextColor: null,
+        darkBgColor: null,
+        darkSurfaceBgColor: null,
+        darkUserBgColor: null,
+        darkBorderColor: null,
+        // Позиционирование
+        bottomOffset: null,
+        rightOffset: null,
+        leftOffset: null,
+        topOffset: null
     };
     
     class DiogenChatWidget {
@@ -21,6 +52,7 @@
             this.messages = [];
             this.isLoading = false;
             this.referenceId = this.generateReferenceId();
+            this.currentTheme = this.getInitialTheme();
             this.init();
         }
         
@@ -28,10 +60,95 @@
             this.createWidgetButton();
             this.createModal();
             this.attachEventListeners();
+            this.applyCustomStyles();
         }
         
         generateReferenceId() {
-            return 'ref_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            // Генерируем reference_id в формате PROJECT_ID.USER_ID.TIMESTAMP
+            const projectId = this.config.projectId || '000';
+            const userId = this.config.userId || '3654823';
+            const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp в секундах
+            
+            const referenceId = `${projectId}.${userId}.${timestamp}`;
+            console.log('🆔 Генерируем reference_id:', referenceId);
+            
+            return referenceId;
+        }
+        
+        // Определяем, нужен ли прокси
+        shouldUseProxy() {
+            // Если devMode явно задан, используем его
+            if (this.config.devMode === 'true' || this.config.devMode === true) {
+                return true;
+            }
+            if (this.config.devMode === 'false' || this.config.devMode === false) {
+                return false;
+            }
+            
+            // Автоматическое определение (devMode === 'auto')
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname.includes('localhost');
+            
+            const isDevPort = window.location.port === '5173' || 
+                             window.location.port === '3000' ||
+                             window.location.port === '8080';
+            
+            const isDifferentOrigin = !this.config.apiUrl.includes(window.location.origin);
+            
+            return isLocalhost && isDevPort && isDifferentOrigin;
+        }
+        
+        // Генерируем URL для прокси
+        generateProxyUrl() {
+            // Используем простой и предсказуемый путь
+            return '/api/widget-proxy';
+        }
+        
+        // Получаем финальный URL для запроса
+        getApiUrl() {
+            if (this.shouldUseProxy()) {
+                const proxyUrl = this.generateProxyUrl();
+                console.log('🔄 Используем прокси:', proxyUrl, '→', this.config.apiUrl);
+                return proxyUrl;
+            }
+            console.log('🌐 Прямое подключение к:', this.config.apiUrl);
+            return this.config.apiUrl;
+        }
+        
+        getInitialTheme() {
+            // Проверяем сохраненную тему
+            const savedTheme = localStorage.getItem('diogen-chat-theme');
+            if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
+                return savedTheme;
+            }
+            return this.config.theme;
+        }
+        
+        setTheme(theme) {
+            this.currentTheme = theme;
+            localStorage.setItem('diogen-chat-theme', theme);
+            this.applyTheme();
+            if (this.themeToggleBtn && this.config.enableThemeToggle) {
+                this.updateThemeButton();
+            }
+        }
+        
+        applyTheme() {
+            const body = document.body;
+            
+            // Удаляем существующие классы темы
+            body.classList.remove('diogen-theme-light', 'diogen-theme-dark', 'diogen-theme-auto');
+            
+            // Добавляем класс текущей темы
+            body.classList.add(`diogen-theme-${this.currentTheme}`);
+        }
+        
+        toggleTheme() {
+            const themeOrder = ['auto', 'light', 'dark'];
+            const currentIndex = themeOrder.indexOf(this.currentTheme);
+            const nextIndex = (currentIndex + 1) % themeOrder.length;
+            this.setTheme(themeOrder[nextIndex]);
         }
         
         createWidgetButton() {
@@ -46,6 +163,7 @@
             
             document.body.appendChild(button);
             this.button = button;
+            this.applyButtonPosition();
         }
         
         createModal() {
@@ -55,13 +173,20 @@
                 <div class="diogen-chat-overlay">
                     <div class="diogen-chat-container">
                         <div class="diogen-chat-header">
-                            <h3 class="diogen-chat-title">Чат-бот</h3>
+                            <h3 class="diogen-chat-title">${this.config.title}</h3>
                             <div class="diogen-chat-controls">
                                 <button title="На весь экран" class="diogen-chat-btn-fullscreen">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M10.9733 4.66667C10.9733 4.48986 10.9031 4.32029 10.7781 4.19526C10.653 4.07024 10.4835 4 10.3067 4H4.66667C4.48986 4 4.32029 4.07024 4.19526 4.19526C4.07024 4.32029 4 4.48986 4 4.66667V10.3067C4 10.4835 4.07024 10.653 4.19526 10.7781C4.32029 10.9031 4.48986 10.9733 4.66667 10.9733C4.84348 10.9733 5.01305 10.9031 5.13807 10.7781C5.2631 10.653 5.33333 10.4835 5.33333 10.3067V6.27733L9.836 10.78C9.8975 10.8437 9.97106 10.8945 10.0524 10.9294C10.1337 10.9643 10.2212 10.9827 10.3097 10.9835C10.3983 10.9843 10.486 10.9674 10.568 10.9339C10.6499 10.9004 10.7243 10.8509 10.7869 10.7883C10.8495 10.7257 10.899 10.6512 10.9325 10.5693C10.9661 10.4874 10.9829 10.3996 10.9822 10.3111C10.9814 10.2225 10.963 10.1351 10.9281 10.0537C10.8931 9.97239 10.8423 9.89883 10.7787 9.83733L6.276 5.33333H10.3067C10.4835 5.33333 10.653 5.2631 10.7781 5.13807C10.9031 5.01305 10.9733 4.84348 10.9733 4.66667ZM16.6667 5.33333C17.1971 5.33333 17.7058 5.54405 18.0809 5.91912C18.456 6.29419 18.6667 6.8029 18.6667 7.33333V12H14.3587C13.7328 12 13.1325 12.2486 12.6899 12.6912C12.2473 13.1338 11.9987 13.7341 11.9987 14.36V18.6667H7.33333C6.8029 18.6667 6.29419 18.456 5.91912 18.0809C5.54405 17.7058 5.33333 17.1971 5.33333 16.6667V13.6933C5.33333 13.5165 5.2631 13.347 5.13807 13.2219C5.01305 13.0969 4.84348 13.0267 4.66667 13.0267C4.48986 13.0267 4.32029 13.0969 4.19526 13.2219C4.07024 13.347 4 13.5165 4 13.6933V16.6667C4 17.5507 4.35119 18.3986 4.97631 19.0237C5.60143 19.6488 6.44928 20 7.33333 20H16.6667C17.5507 20 18.3986 19.6488 19.0237 19.0237C19.6488 18.3986 20 17.5507 20 16.6667V7.33333C20 6.44928 19.6488 5.60143 19.0237 4.97631C18.3986 4.35119 17.5507 4 16.6667 4H13.6933C13.5165 4 13.347 4.07024 13.2219 4.19526C13.0969 4.32029 13.0267 4.48986 13.0267 4.66667C13.0267 4.84348 13.0969 5.01305 13.2219 5.13807C13.347 5.2631 13.5165 5.33333 13.6933 5.33333H16.6667Z" fill="currentColor"/>
                                     </svg>
                                 </button>
+                                ${this.config.enableThemeToggle ? `
+                                <button title="Переключить тему" class="diogen-chat-btn-theme">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                ` : ''}
                                 <button class="diogen-chat-close" title="Закрыть">
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -107,6 +232,7 @@
             this.container = modal.querySelector('.diogen-chat-container');
             this.fullscreenBtn = modal.querySelector('.diogen-chat-btn-fullscreen');
             this.closeBtn = modal.querySelector('.diogen-chat-close');
+            this.themeToggleBtn = modal.querySelector('.diogen-chat-btn-theme');
         }
         
         attachEventListeners() {
@@ -161,6 +287,17 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && this.isOpen) this.closeChat();
             });
+            
+            // Переключение темы
+            if (this.themeToggleBtn) {
+                this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+            }
+            
+            // Инициализируем тему
+            this.applyTheme();
+            if (this.themeToggleBtn && this.config.enableThemeToggle) {
+                this.updateThemeButton();
+            }
         }
         
         openChat() {
@@ -213,6 +350,49 @@
                     </svg>
                 `;
                 fullscreenBtn.title = 'На весь экран';
+            }
+        }
+        
+        updateThemeButton() {
+            const themeBtn = this.themeToggleBtn;
+            if (!themeBtn) return;
+
+            // Меняем иконку и подсказку в зависимости от текущей темы
+            switch (this.currentTheme) {
+                case 'light':
+                    themeBtn.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    `;
+                    themeBtn.title = 'Светлая тема (нажать для переключения)';
+                    break;
+                case 'dark':
+                    themeBtn.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="currentColor"/>
+                        </svg>
+                    `;
+                    themeBtn.title = 'Темная тема (нажать для переключения)';
+                    break;
+                case 'auto':
+                default:
+                    themeBtn.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M12 2a10 10 0 0 1 0 20V2Z" fill="currentColor"/>
+                        </svg>
+                    `;
+                    themeBtn.title = 'Автоматическая тема (нажать для переключения)';
+                    break;
             }
         }
         
@@ -331,17 +511,34 @@
                 // Показываем индикатор загрузки
                 this.showLoadingMessage();
                 
-                const response = await fetch(this.config.apiUrl, {
+                // Формируем payload в правильном формате как в curl примере
+                const payload = [{
+                    component_name: "meta_data",
+                    parent_block_id: "block-0-1",
+                    action_mode: "dialog",
+                    action_params: [
+                        {
+                            variable: "input_text",
+                            data: message
+                        },
+                        {
+                            variable: "reference_id",
+                            data: this.generateReferenceId()
+                        }
+                    ]
+                }];
+                
+                console.log('📤 Отправляем запрос:', JSON.stringify(payload, null, 2));
+                
+                const response = await fetch(this.getApiUrl(), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword)
+                        'Authorization': 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword),
+                        // Добавляем заголовок с реальным API URL для прокси
+                        'X-Target-URL': this.config.apiUrl
                     },
-                    body: JSON.stringify({
-                        message: message,
-                        project: this.config.project,
-                        reference_id: this.generateReferenceId()
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
@@ -349,12 +546,43 @@
                 }
 
                 const data = await response.json();
+                console.log('📥 Получен ответ:', data);
                 this.processServerResponse(data);
                 
             } catch (error) {
                 console.error('Ошибка при отправке сообщения:', error);
                 this.hideLoadingMessage();
-                this.renderMessage('Извините, произошла ошибка при отправке сообщения. Попробуйте еще раз.', false);
+                
+                // Улучшенное сообщение об ошибке с инструкциями
+                let errorMessage = 'Извините, произошла ошибка при отправке сообщения.';
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                    if (this.shouldUseProxy()) {
+                        const proxyUrl = this.generateProxyUrl();
+                        errorMessage = `Ошибка CORS. Настройте прокси в vite.config.js:\n\n` +
+                                     `'${proxyUrl}': {\n` +
+                                     `  target: '${this.config.apiUrl}',\n` +
+                                     `  changeOrigin: true,\n` +
+                                     `  secure: false\n` +
+                                     `}`;
+                    } else {
+                        errorMessage = 'Ошибка подключения к серверу. Проверьте доступность API или настройки CORS.';
+                    }
+                }
+                
+                this.renderMessage(errorMessage, false);
+                
+                // Дополнительная информация в консоль для разработчиков
+                if (this.shouldUseProxy()) {
+                    console.group('🔧 Инструкции по настройке прокси:');
+                    console.log('Добавьте в vite.config.js:');
+                    console.log(`'${this.generateProxyUrl()}': {`);
+                    console.log(`  target: '${this.config.apiUrl}',`);
+                    console.log(`  changeOrigin: true,`);
+                    console.log(`  secure: false`);
+                    console.log(`}`);
+                    console.groupEnd();
+                }
             }
         }
         
@@ -384,10 +612,34 @@
         processServerResponse(data) {
             this.hideLoadingMessage();
             
-            if (data.message) {
+            // Обрабатываем ответ в формате массива
+            if (Array.isArray(data) && data.length > 0) {
+                const responseItem = data[0];
+                
+                // Ищем сообщение в items
+                if (responseItem.items && responseItem.items.length > 0) {
+                    for (const item of responseItem.items) {
+                        if (item.meta && item.meta.variable === 'output_text' && item.meta.data) {
+                            this.renderMessage(item.meta.data, false);
+                            return;
+                        }
+                    }
+                }
+                
+                // Если не нашли output_text, показываем общий ответ
+                if (responseItem.message) {
+                    this.renderMessage(responseItem.message, false);
+                } else {
+                    this.renderMessage('Получен ответ от сервера, но не удалось извлечь текст сообщения.', false);
+                }
+            } else if (data.message) {
+                // Обратная совместимость со старым форматом
                 this.renderMessage(data.message, false);
+            } else {
+                this.renderMessage('Получен некорректный ответ от сервера.', false);
             }
             
+            // Обрабатываем действия, если есть
             if (data.actions && data.actions.length > 0) {
                 this.renderActionButtons(data.actions);
             }
@@ -429,7 +681,7 @@
                 if (!hasText || this.isLoading) {
                     svgPath.setAttribute('fill', '#9CA3AF'); // Серый цвет
                 } else {
-                    svgPath.setAttribute('fill', '#333333'); // Черный цвет
+                    svgPath.setAttribute('fill', '#FFFFFF'); // Черный цвет
                 }
             }
         }
@@ -445,9 +697,134 @@
             this.referenceId = this.generateReferenceId();
         }
         
+        updateStyles(styles) {
+            // Обновляем конфигурацию стилей
+            Object.assign(this.config, styles);
+            // Применяем новые стили
+            this.applyCustomStyles();
+        }
+        
+        updateConfig(newConfig) {
+            // Обновляем конфигурацию
+            Object.assign(this.config, newConfig);
+            // Применяем изменения
+            this.applyCustomStyles();
+        }
+        
+        getCurrentTheme() {
+            return this.currentTheme;
+        }
+        
+        getConfig() {
+            return { ...this.config };
+        }
+        
         destroy() {
             if (this.button) this.button.remove();
             if (this.modal) this.modal.remove();
+        }
+        
+        applyCustomStyles() {
+            const root = document.documentElement;
+            
+            // Применяем основные стили
+            if (this.config.primaryColor) {
+                root.style.setProperty('--diogen-primary-color', this.config.primaryColor);
+            }
+            if (this.config.primaryHoverColor) {
+                root.style.setProperty('--diogen-primary-hover', this.config.primaryHoverColor);
+            }
+            if (this.config.textColor) {
+                root.style.setProperty('--diogen-text-color', this.config.textColor);
+            }
+            if (this.config.bgColor) {
+                root.style.setProperty('--diogen-bg-color', this.config.bgColor);
+            }
+            if (this.config.surfaceBgColor) {
+                root.style.setProperty('--diogen-surface-bg', this.config.surfaceBgColor);
+            }
+            if (this.config.userBgColor) {
+                root.style.setProperty('--diogen-user-bg', this.config.userBgColor);
+            }
+            if (this.config.borderColor) {
+                root.style.setProperty('--diogen-border-color', this.config.borderColor);
+            }
+            if (this.config.borderRadius) {
+                root.style.setProperty('--diogen-border-radius', this.config.borderRadius);
+            }
+            if (this.config.fontFamily) {
+                root.style.setProperty('--diogen-font-family', this.config.fontFamily);
+            }
+            if (this.config.inputRadius) {
+                root.style.setProperty('--diogen-input-radius', this.config.inputRadius);
+            }
+            
+            // Размеры
+            if (this.config.width) {
+                root.style.setProperty('--diogen-width', this.config.width);
+            }
+            if (this.config.height) {
+                root.style.setProperty('--diogen-height', this.config.height);
+            }
+            if (this.config.buttonSize) {
+                root.style.setProperty('--diogen-button-size', this.config.buttonSize);
+            }
+            
+            // Темная тема
+            if (this.config.darkPrimaryColor) {
+                root.style.setProperty('--diogen-dark-primary-color', this.config.darkPrimaryColor);
+            }
+            if (this.config.darkTextColor) {
+                root.style.setProperty('--diogen-dark-text-color', this.config.darkTextColor);
+            }
+            if (this.config.darkBgColor) {
+                root.style.setProperty('--diogen-dark-bg-color', this.config.darkBgColor);
+            }
+            if (this.config.darkSurfaceBgColor) {
+                root.style.setProperty('--diogen-dark-surface-bg', this.config.darkSurfaceBgColor);
+            }
+            if (this.config.darkUserBgColor) {
+                root.style.setProperty('--diogen-dark-user-bg', this.config.darkUserBgColor);
+            }
+            if (this.config.darkBorderColor) {
+                root.style.setProperty('--diogen-dark-border-color', this.config.darkBorderColor);
+            }
+            
+            // Позиционирование кнопки
+            this.applyButtonPosition();
+        }
+        
+        applyButtonPosition() {
+            if (!this.button) return;
+            
+            const button = this.button;
+            
+            // Сбрасываем все позиции
+            button.style.bottom = '';
+            button.style.right = '';
+            button.style.left = '';
+            button.style.top = '';
+            
+            // Применяем позиционирование на основе конфигурации
+            switch (this.config.position) {
+                case 'bottom-left':
+                    button.style.bottom = this.config.bottomOffset || '20px';
+                    button.style.left = this.config.leftOffset || '20px';
+                    break;
+                case 'top-right':
+                    button.style.top = this.config.topOffset || '20px';
+                    button.style.right = this.config.rightOffset || '20px';
+                    break;
+                case 'top-left':
+                    button.style.top = this.config.topOffset || '20px';
+                    button.style.left = this.config.leftOffset || '20px';
+                    break;
+                case 'bottom-right':
+                default:
+                    button.style.bottom = this.config.bottomOffset || '20px';
+                    button.style.right = this.config.rightOffset || '20px';
+                    break;
+            }
         }
     }
     
@@ -461,11 +838,48 @@
         // Если скрипт найден, берем конфигурацию из атрибутов
         if (script) {
             config.project = script.getAttribute('data-diogen-project') || DEFAULT_CONFIG.project;
+            config.projectId = script.getAttribute('data-diogen-project-id') || DEFAULT_CONFIG.projectId;
+            config.userId = script.getAttribute('data-diogen-user-id') || DEFAULT_CONFIG.userId;
             config.position = script.getAttribute('data-diogen-position') || DEFAULT_CONFIG.position;
             config.buttonSize = script.getAttribute('data-diogen-button-size') || DEFAULT_CONFIG.buttonSize;
             config.width = script.getAttribute('data-diogen-width') || DEFAULT_CONFIG.width;
             config.height = script.getAttribute('data-diogen-height') || DEFAULT_CONFIG.height;
             config.apiUrl = script.getAttribute('data-diogen-api-url') || DEFAULT_CONFIG.apiUrl;
+            config.theme = script.getAttribute('data-diogen-theme') || DEFAULT_CONFIG.theme;
+            config.enableThemeToggle = script.getAttribute('data-diogen-enable-theme-toggle') !== 'false';
+            config.basicLogin = script.getAttribute('data-diogen-basic-login') || DEFAULT_CONFIG.basicLogin;
+            config.basicPassword = script.getAttribute('data-diogen-basic-password') || DEFAULT_CONFIG.basicPassword;
+            
+            // Опции для разработки
+            config.devMode = script.getAttribute('data-diogen-dev-mode') || DEFAULT_CONFIG.devMode;
+            config.proxyPath = script.getAttribute('data-diogen-proxy-path') || DEFAULT_CONFIG.proxyPath;
+            
+            // Стили - основные цвета
+            config.primaryColor = script.getAttribute('data-diogen-primary-color');
+            config.primaryHoverColor = script.getAttribute('data-diogen-primary-hover-color');
+            config.textColor = script.getAttribute('data-diogen-text-color');
+            config.bgColor = script.getAttribute('data-diogen-bg-color');
+            config.surfaceBgColor = script.getAttribute('data-diogen-surface-bg-color');
+            config.userBgColor = script.getAttribute('data-diogen-user-bg-color');
+            config.borderColor = script.getAttribute('data-diogen-border-color');
+            config.borderRadius = script.getAttribute('data-diogen-border-radius');
+            config.fontFamily = script.getAttribute('data-diogen-font-family');
+            config.inputRadius = script.getAttribute('data-diogen-input-radius');
+            config.title = script.getAttribute('data-diogen-title') || DEFAULT_CONFIG.title;
+            
+            // Стили - темная тема
+            config.darkPrimaryColor = script.getAttribute('data-diogen-dark-primary-color');
+            config.darkTextColor = script.getAttribute('data-diogen-dark-text-color');
+            config.darkBgColor = script.getAttribute('data-diogen-dark-bg-color');
+            config.darkSurfaceBgColor = script.getAttribute('data-diogen-dark-surface-bg-color');
+            config.darkUserBgColor = script.getAttribute('data-diogen-dark-user-bg-color');
+            config.darkBorderColor = script.getAttribute('data-diogen-dark-border-color');
+            
+            // Позиционирование
+            config.bottomOffset = script.getAttribute('data-diogen-bottom-offset');
+            config.rightOffset = script.getAttribute('data-diogen-right-offset');
+            config.leftOffset = script.getAttribute('data-diogen-left-offset');
+            config.topOffset = script.getAttribute('data-diogen-top-offset');
         }
         
         // Ждем загрузки DOM
