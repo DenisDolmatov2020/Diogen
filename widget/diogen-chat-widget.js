@@ -1,6 +1,893 @@
 (function() {
     'use strict';
     
+    // CSS стили виджета - встроены для автономной работы
+    const WIDGET_CSS = `
+/* Diogen Chat Widget Styles - адаптированные из ChatPage.vue */
+:root {
+    --diogen-primary-color: #33AFE1;
+    --diogen-primary-hover: #2A9BC7;
+    --diogen-text-color: #231F1F;
+    --diogen-bg-color: #F1F4F7;
+    --diogen-surface-bg: #ffffff;
+    --diogen-user-bg: #F5F0EA;
+    --diogen-border-color: #E5E7EB;
+    --diogen-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --diogen-border-radius: 12px;
+    --diogen-font-family: 'Golos Text', system-ui, -apple-system, sans-serif;
+    --diogen-z-index: 999999;
+    --diogen-input-radius: 50px;
+    --diogen-width: 508px;
+    --diogen-height: 552px;
+    --diogen-button-size: 60px;
+    
+    /* Светлая тема по умолчанию */
+    --diogen-theme-text-color: var(--diogen-text-color);
+    --diogen-theme-bg-color: var(--diogen-bg-color);
+    --diogen-theme-surface-bg: var(--diogen-surface-bg);
+    --diogen-theme-user-bg: var(--diogen-user-bg);
+    --diogen-theme-border-color: var(--diogen-border-color);
+    --diogen-theme-shadow: var(--diogen-shadow);
+    --diogen-theme-placeholder-color: #9CA3AF;
+    --diogen-theme-loading-bg: #f5f5f5;
+    --diogen-theme-hover-bg: #f5f5f5;
+    
+    /* Кастомизируемые переменные для темной темы */
+    --diogen-dark-primary-color: #33AFE1;
+    --diogen-dark-primary-hover: #2A9BC7;
+    --diogen-dark-text-color: #ffffff;
+    --diogen-dark-bg-color: #1a1a1a;
+    --diogen-dark-surface-bg: #2d2d2d;
+    --diogen-dark-user-bg: #3a3a3a;
+    --diogen-dark-border-color: #404040;
+    --diogen-dark-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --diogen-dark-placeholder-color: #888;
+    --diogen-dark-loading-bg: #404040;
+    --diogen-dark-hover-bg: #404040;
+}
+
+/* Кнопка чата */
+.diogen-chat-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: var(--diogen-button-size, 60px);
+    height: var(--diogen-button-size, 60px);
+    background: var(--diogen-primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--diogen-shadow);
+    transition: all 0.3s ease;
+    z-index: var(--diogen-z-index);
+    color: white;
+    font-family: var(--diogen-font-family) system-ui;
+}
+
+.diogen-chat-button:hover {
+    background: var(--diogen-primary-hover);
+    transform: scale(1.05);
+}
+
+.diogen-chat-button-hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
+
+/* Модальное окно */
+.diogen-chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: var(--diogen-z-index);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    font-family: var(--diogen-font-family) system-ui;
+}
+
+.diogen-chat-modal.diogen-chat-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.diogen-chat-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+
+/* Контейнер чата */
+.diogen-chat-container {
+    background: var(--diogen-theme-bg-color);
+    border-radius: var(--diogen-border-radius);
+    box-shadow: var(--diogen-theme-shadow);
+    width: 100%;
+    max-width: var(--diogen-width, 508px);
+    height: var(--diogen-height, 552px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    margin-right: 2vw !important;
+    margin-left: 2vw !important;
+}
+
+.diogen-chat-open .diogen-chat-container {
+    transform: scale(1);
+}
+
+.diogen-chat-fullscreen {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    width: 95vw !important;
+    height: 95vh !important;
+}
+
+/* Заголовок - 10% высоты */
+.diogen-chat-header {
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--diogen-theme-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--diogen-theme-surface-bg);
+    flex-shrink: 0;
+}
+
+.diogen-chat-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--diogen-theme-text-color);
+    font-family: var(--diogen-font-family) system-ui;
+    line-height: 1.2;
+}
+
+.diogen-chat-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.diogen-chat-controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    color: var(--diogen-theme-text-color);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    opacity: 0.7;
+}
+
+.diogen-chat-controls button:hover {
+    background: var(--diogen-theme-hover-bg);
+    opacity: 1;
+}
+
+/* Контент чата - 80% высоты */
+.diogen-chat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+/* Область сообщений */
+.diogen-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+/* Контейнер сообщений */
+.diogen-messages-container {
+    padding: 16px;
+    min-height: 100%;
+    padding-bottom: 50px; /* Отступ для поля ввода */
+}
+
+/* Плейсхолдер в центре */
+.diogen-chat-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diogen-chat-placeholder p {
+    text-align: center;
+    color: var(--diogen-theme-placeholder-color);
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Сообщения */
+.diogen-message {
+    display: flex;
+    margin: 16px 0;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+.diogen-user-message {
+    justify-content: flex-end;
+}
+
+.diogen-bot-message {
+    justify-content: flex-start;
+}
+
+.diogen-message-content {
+    max-width: 384px;
+}
+
+/* Сообщения пользователя */
+.diogen-user-message .diogen-message-text {
+    color: var(--diogen-theme-text-color);
+    background: var(--diogen-theme-user-bg);
+    border: 1px solid var(--diogen-theme-border-color);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 16px;
+    padding: 12px;
+    min-width: 280px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/* Сообщения бота */
+.diogen-bot-message .diogen-message-content {
+    color: var(--diogen-theme-text-color);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 16px 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.diogen-message-text {
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* Индикатор загрузки */
+.diogen-loading-message .diogen-message-content {
+    background: var(--diogen-theme-loading-bg);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 16px;
+}
+
+.diogen-loading-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.diogen-loading-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--diogen-theme-text-color);
+    opacity: 0.4;
+    animation: loadingDots 1.4s infinite ease-in-out;
+}
+
+.diogen-loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.diogen-loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Кнопки действий в чате */
+.diogen-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.diogen-action-button {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: var(--diogen-font-family) system-ui;
+    line-height: 1.2;
+    letter-spacing: 0;
+    transition: all 0.2s ease;
+    border: 0;
+    min-width: 67px;
+    gap: 12px;
+    border-radius: 20px;
+    padding: 14px 22px;
+    background: var(--diogen-primary-color);
+    color: white;
+    cursor: pointer;
+    margin-right: 12px;
+    margin-bottom: 8px;
+}
+
+.diogen-action-button:hover {
+    background: var(--diogen-primary-hover);
+}
+
+.diogen-action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #ccc;
+}
+
+/* Изображения в чате */
+.diogen-pictures-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 12px 0;
+}
+
+.diogen-picture-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.diogen-image-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--diogen-theme-surface-bg);
+    border: 1px solid var(--diogen-theme-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 100px;
+    max-width: 100%;
+}
+
+.diogen-picture-image {
+    max-width: 100%;
+    max-height: 300px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    border-radius: 8px;
+}
+
+.diogen-picture-image:hover {
+    transform: scale(1.02);
+}
+
+.diogen-picture-title {
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--diogen-theme-text-color);
+    text-align: center;
+    padding: 0 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.diogen-image-error {
+    padding: 16px;
+    text-align: center;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.diogen-image-error a {
+    color: #2563eb;
+    text-decoration: underline;
+    word-break: break-all;
+    display: block;
+    margin-top: 8px;
+}
+
+.diogen-image-error pre {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: left;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Адаптивность для изображений */
+@media (max-width: 768px) {
+    .diogen-picture-image {
+        max-height: 200px;
+    }
+    
+    .diogen-picture-title {
+        font-size: 13px;
+    }
+    
+    .diogen-image-error {
+        padding: 12px;
+        font-size: 13px;
+    }
+}
+
+/* Поле ввода - 10% высоты */
+.diogen-chat-input-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 80px;
+    background: var(--diogen-theme-bg-color);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.diogen-input-container {
+    height: 100%;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+}
+
+.diogen-input-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: end;
+    background: var(--diogen-theme-surface-bg);
+    border: 1px solid var(--diogen-theme-border-color);
+    border-radius: var(--diogen-input-radius);
+    padding-left: 24px;
+    padding-right: 8px;
+    transition: border-color 0.2s ease;
+    flex: 1;
+    gap: 8px;
+}
+
+.diogen-input-wrapper:focus-within {
+    border-color: var(--diogen-primary-color);
+}
+
+.diogen-input-field {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--diogen-theme-text-color);
+    font-size: 14px;
+    min-height: 32px;
+    max-height: 32px;
+    line-height: 32px;
+    font-family: var(--diogen-font-family) system-ui;
+}
+
+.diogen-input-field:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.diogen-input-field::placeholder {
+    color: var(--diogen-theme-placeholder-color);
+}
+
+.diogen-send-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.diogen-send-button:hover:not(:disabled) {
+    background: rgba(51, 175, 225, 0.1);
+}
+
+.diogen-send-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Анимации */
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Скроллбар */
+.diogen-chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.diogen-chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Стили для ссылок в чате */
+.diogen-chat-link {
+    color: #0053DA;
+    text-decoration: underline;
+    transition: opacity 0.2s ease;
+}
+
+.diogen-chat-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .diogen-chat-overlay {
+        padding: 10px;
+    }
+    
+    .diogen-chat-container {
+        max-width: 100%;
+        max-height: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+    
+    .diogen-chat-button {
+        bottom: 15px;
+        right: 15px;
+        width: calc(var(--diogen-button-size) * 0.83);
+        height: calc(var(--diogen-button-size) * 0.83);
+    }
+    
+    .diogen-message-content {
+        max-width: calc(100vw - 80px);
+    }
+    
+    .diogen-messages-container {
+        padding: 12px;
+    }
+    
+    .diogen-input-container {
+        padding: 8px 12px;
+    }
+    
+    .diogen-action-button {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 18px;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .diogen-chat-header {
+        height: 50px;
+        min-height: 50px;
+        max-height: 50px;
+        padding: 0 16px;
+    }
+    
+    .diogen-chat-title {
+        font-size: 16px;
+    }
+    
+    .diogen-message-content {
+        max-width: calc(100vw - 60px);
+    }
+    
+    .diogen-input-field {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
+}
+
+/* Темная тема - ручное управление */
+.diogen-theme-dark {
+    --diogen-theme-text-color: var(--diogen-dark-text-color);
+    --diogen-theme-bg-color: var(--diogen-dark-bg-color);
+    --diogen-theme-surface-bg: var(--diogen-dark-surface-bg);
+    --diogen-theme-user-bg: var(--diogen-dark-user-bg);
+    --diogen-theme-border-color: var(--diogen-dark-border-color);
+    --diogen-theme-shadow: var(--diogen-dark-shadow);
+    --diogen-theme-placeholder-color: var(--diogen-dark-placeholder-color);
+    --diogen-theme-loading-bg: var(--diogen-dark-loading-bg);
+    --diogen-theme-hover-bg: var(--diogen-dark-hover-bg);
+}
+
+/* Автоматическая тема - следует системным настройкам */
+@media (prefers-color-scheme: dark) {
+    .diogen-theme-auto {
+        --diogen-theme-text-color: var(--diogen-dark-text-color);
+        --diogen-theme-bg-color: var(--diogen-dark-bg-color);
+        --diogen-theme-surface-bg: var(--diogen-dark-surface-bg);
+        --diogen-theme-user-bg: var(--diogen-dark-user-bg);
+        --diogen-theme-border-color: var(--diogen-dark-border-color);
+        --diogen-theme-shadow: var(--diogen-dark-shadow);
+        --diogen-theme-placeholder-color: var(--diogen-dark-placeholder-color);
+        --diogen-theme-loading-bg: var(--diogen-dark-loading-bg);
+        --diogen-theme-hover-bg: var(--diogen-dark-hover-bg);
+    }
+}
+
+/* Светлая тема - явное указание */
+.diogen-theme-light {
+    --diogen-theme-text-color: var(--diogen-text-color);
+    --diogen-theme-bg-color: var(--diogen-bg-color);
+    --diogen-theme-surface-bg: var(--diogen-surface-bg);
+    --diogen-theme-user-bg: var(--diogen-user-bg);
+    --diogen-theme-border-color: var(--diogen-border-color);
+    --diogen-theme-shadow: var(--diogen-shadow);
+    --diogen-theme-placeholder-color: #9CA3AF;
+    --diogen-theme-loading-bg: #f5f5f5;
+    --diogen-theme-hover-bg: #f5f5f5;
+}
+
+/* Индикатор новых сообщений */
+.diogen-new-message-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--diogen-primary-color);
+    color: white;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.diogen-new-message-indicator.diogen-indicator-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: all;
+}
+
+.diogen-new-message-indicator:hover {
+    background: var(--diogen-primary-hover);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.diogen-indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.diogen-indicator-content svg {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-4px);
+    }
+    60% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Улучшенные анимации сообщений */
+.diogen-message {
+    animation: messageAppear 0.3s ease-out;
+}
+
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Анимация для загрузочного сообщения */
+.diogen-loading-message {
+    animation: loadingAppear 0.2s ease-out;
+}
+
+@keyframes loadingAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Плавный скролл для контейнера сообщений */
+.diogen-messages-container {
+    scroll-behavior: smooth;
+}
+
+/* Улучшенная анимация появления кнопки отправки */
+.diogen-send-button {
+    transition: all 0.2s ease, background-color 0.3s ease;
+}
+
+.diogen-send-button:not(:disabled) {
+    transform: scale(1);
+}
+
+.diogen-send-button:not(:disabled):hover {
+    transform: scale(1.05);
+}
+
+.diogen-send-button:disabled {
+    transform: scale(0.95);
+    opacity: 0.6;
+}
+
+/* Анимация для кнопок действий */
+.diogen-action-button {
+    transition: all 0.2s ease;
+    transform: translateY(0);
+}
+
+.diogen-action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(51, 175, 225, 0.3);
+}
+
+.diogen-action-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Темная тема для индикатора */
+.diogen-theme-dark .diogen-new-message-indicator {
+    background: var(--diogen-dark-primary-color, var(--diogen-primary-color));
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.diogen-theme-dark .diogen-new-message-indicator:hover {
+    background: var(--diogen-dark-primary-hover, var(--diogen-primary-hover));
+}
+
+@media (prefers-color-scheme: dark) {
+    .diogen-theme-auto .diogen-new-message-indicator {
+        background: var(--diogen-dark-primary-color, var(--diogen-primary-color));
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .diogen-theme-auto .diogen-new-message-indicator:hover {
+        background: var(--diogen-dark-primary-hover, var(--diogen-primary-hover));
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .diogen-new-message-indicator {
+        bottom: 15px;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 16px;
+    }
+    
+    .diogen-indicator-content {
+        gap: 4px;
+    }
+    
+    .diogen-indicator-content svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .diogen-new-message-indicator {
+        bottom: 12px;
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 14px;
+    }
+}
+`;
+
+    // Функция для инъекции CSS в DOM
+    function injectStyles() {
+        // Проверяем, не были ли стили уже добавлены
+        if (document.getElementById('diogen-widget-styles')) {
+            return;
+        }
+
+        const styleElement = document.createElement('style');
+        styleElement.id = 'diogen-widget-styles';
+        styleElement.textContent = WIDGET_CSS;
+        
+        // Добавляем стили в head
+        const head = document.head || document.getElementsByTagName('head')[0];
+        head.appendChild(styleElement);
+        
+        console.log('🎨 Стили виджета успешно загружены');
+    }
+
     // Конфигурация по умолчанию
     const DEFAULT_CONFIG = {
         apiUrl: 'https://knowledge.slovo-soft.ru/api/v1/mentorium',
@@ -57,6 +944,9 @@
         }
         
         init() {
+            // Первым делом внедряем стили
+            injectStyles();
+            
             this.createWidgetButton();
             this.createModal();
             this.attachEventListeners();
@@ -269,6 +1159,7 @@
             document.body.appendChild(modal);
             this.modal = modal;
             this.messagesContainer = modal.querySelector('.diogen-messages-container');
+            this.messagesScrollContainer = modal.querySelector('.diogen-chat-messages'); // Добавляем правильный элемент для скроллинга
             this.inputField = modal.querySelector('#diogen-input-field');
             this.sendButton = modal.querySelector('#diogen-send-button');
             this.container = modal.querySelector('.diogen-chat-container');
@@ -455,7 +1346,7 @@
             
             this.messages.push(message);
             this.renderMessage(message);
-            this.scrollToBottom();
+            this.scrollToLastMessage();
             
             return message;
         }
@@ -485,7 +1376,7 @@
             }
             
             this.messagesContainer.appendChild(messageDiv);
-            this.scrollToBottom();
+            this.forceScrollToLastMessage(50);
         }
         
         formatMessageText(text) {
@@ -525,10 +1416,58 @@
             return formatted.trim();
         }
         
-        scrollToBottom() {
+        scrollToLastMessage() {
+            // Улучшенный скроллинг к началу последнего сообщения
+            if (!this.messagesScrollContainer) {
+                console.warn('⚠️ Элемент для скроллинга не найден');
+                return;
+            }
+
+            // Используем requestAnimationFrame для плавного скроллинга
+            requestAnimationFrame(() => {
+                try {
+                    const scrollElement = this.messagesScrollContainer;
+                    const lastMessage = this.messagesContainer.lastElementChild;
+                    
+                    if (lastMessage && lastMessage.classList.contains('diogen-message')) {
+                        // Прокручиваем к началу последнего сообщения
+                        const messageTop = lastMessage.offsetTop;
+                        const containerTop = this.messagesContainer.offsetTop;
+                        const targetScrollTop = messageTop - containerTop;
+                        
+                        scrollElement.scrollTo({
+                            top: targetScrollTop,
+                            behavior: 'smooth'
+                        });
+                        
+                        console.log('📜 Скролл к последнему сообщению выполнен:', {
+                            messageTop,
+                            containerTop,
+                            targetScrollTop,
+                            currentScrollTop: scrollElement.scrollTop
+                        });
+                    } else {
+                        // Fallback к обычному скроллингу вниз если нет сообщений
+                        scrollElement.scrollTo({
+                            top: scrollElement.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка при скроллинге к последнему сообщению:', error);
+                    // Fallback к обычному скроллингу
+                    this.messagesScrollContainer.scrollTop = this.messagesScrollContainer.scrollHeight;
+                }
+            });
+        }
+        
+        // Принудительный скроллинг с задержкой для загрузки контента
+        forceScrollToLastMessage(delay = 200) {
             setTimeout(() => {
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }, 100);
+                this.scrollToLastMessage();
+                // Дополнительный скролл через небольшую задержку для надежности
+                setTimeout(() => this.scrollToLastMessage(), 100);
+            }, delay);
         }
         
         sendMessage(messageText = null) {
@@ -537,6 +1476,9 @@
 
             // Отображаем сообщение пользователя
             this.renderMessage(text, true);
+            
+            // Принудительный скролл после добавления сообщения пользователя
+            this.forceScrollToLastMessage(50);
             
             // Очищаем поле ввода
             if (!messageText) {
@@ -623,6 +1565,9 @@
                 
                 this.renderMessage(errorMessage, false);
                 
+                // Принудительный скролл после ошибки
+                this.forceScrollToLastMessage(100);
+                
                 // Дополнительная информация в консоль для разработчиков
                 if (this.shouldUseProxy()) {
                     console.group('🔧 Инструкции по настройке прокси:');
@@ -656,7 +1601,7 @@
                 </div>
             `;
             this.messagesContainer.appendChild(loadingDiv);
-            this.scrollToBottom();
+            this.scrollToLastMessage();
         }
         
         hideLoadingMessage() {
@@ -672,27 +1617,8 @@
             
             // Обрабатываем ответ в формате массива
             if (Array.isArray(data) && data.length > 0) {
-                // Обрабатываем каждый компонент ответа
-                data.forEach(component => {
-                    if (component.component_name === 'text_block' && component.items && component.items.length > 0) {
-                        // Обрабатываем текстовые блоки
-                        component.items.forEach(item => {
-                            if (item.data) {
-                                console.log('📝 Отображаем текст:', item.data);
-                                this.renderMessage(item.data, false);
-                            }
-                        });
-                    } else if (component.component_name === 'action_button' && component.items && component.items.length > 0) {
-                        // Обрабатываем кнопки действий
-                        console.log('🔘 Отображаем кнопки:', component.items);
-                        this.renderActionButtons(component.items);
-                    } else if (component.component_name === 'picture_block' && component.items && component.items.length > 0) {
-                        // Обрабатываем изображения
-                        console.log('🖼️ Отображаем изображения:', component.items);
-                        this.renderPictureBlock(component.items);
-                    }
-                });
-                
+                // Создаем одно составное сообщение для всех компонентов
+                this.renderCompositeMessage(data);
                 return; // Успешно обработали ответ
             }
             
@@ -707,16 +1633,55 @@
             this.renderMessage('Получен ответ от сервера, но не удалось извлечь текст сообщения.', false);
         }
         
-        renderPictureBlock(pictures) {
-            if (!pictures || pictures.length === 0) return;
+        renderCompositeMessage(components) {
+            // Создаем контейнер для составного сообщения
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'diogen-message diogen-bot-message';
             
-            const picturesDiv = document.createElement('div');
-            picturesDiv.className = 'diogen-message diogen-bot-message';
+            let messageContent = '<div class="diogen-message-content">';
             
-            let picturesHtml = '<div class="diogen-message-content"><div class="diogen-pictures-container">';
+            // Обрабатываем каждый компонент и добавляем в одно сообщение
+            components.forEach(component => {
+                if (component.component_name === 'text_block' && component.items && component.items.length > 0) {
+                    // Добавляем текстовые блоки
+                    component.items.forEach(item => {
+                        if (item.data) {
+                            console.log('📝 Добавляем текст в составное сообщение:', item.data);
+                            messageContent += `<div class="diogen-message-text">${this.formatMessageText(item.data)}</div>`;
+                        }
+                    });
+                } else if (component.component_name === 'picture_block' && component.items && component.items.length > 0) {
+                    // Добавляем изображения
+                    console.log('🖼️ Добавляем изображения в составное сообщение:', component.items);
+                    messageContent += this.generatePicturesHtml(component.items);
+                } else if (component.component_name === 'action_button' && component.items && component.items.length > 0) {
+                    // Добавляем кнопки действий
+                    console.log('🔘 Добавляем кнопки в составное сообщение:', component.items);
+                    messageContent += this.generateActionButtonsHtml(component.items);
+                }
+            });
             
-            // Генерируем уникальные ID для каждого изображения
-            const imageIds = [];
+            messageContent += '</div>';
+            messageDiv.innerHTML = messageContent;
+            
+            // Удаляем placeholder при первом сообщении
+            const placeholder = this.messagesContainer.querySelector('.diogen-chat-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            
+            this.messagesContainer.appendChild(messageDiv);
+            
+            // Добавляем обработчики событий для интерактивных элементов
+            this.attachCompositeMessageHandlers(messageDiv, components);
+            
+            this.scrollToLastMessage();
+        }
+        
+        generatePicturesHtml(pictures) {
+            if (!pictures || pictures.length === 0) return '';
+            
+            let picturesHtml = '<div class="diogen-pictures-container">';
             
             pictures.forEach((picture, index) => {
                 const pictureData = this.getPictureData(picture.data);
@@ -726,7 +1691,6 @@
                 
                 if (pictureData.src) {
                     const imageId = `diogen-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`;
-                    imageIds.push({ id: imageId, data: pictureData });
                     
                     picturesHtml += `
                         <div class="diogen-picture-item">
@@ -736,6 +1700,7 @@
                                     src="${pictureData.src}" 
                                     alt="${pictureData.alt || title || 'Изображение'}"
                                     class="diogen-picture-image"
+                                    data-src="${pictureData.src}"
                                 />
                             </div>
                             ${title ? `<div class="diogen-picture-title">${this.formatMessageText(title)}</div>` : ''}
@@ -753,106 +1718,67 @@
                 }
             });
             
-            picturesHtml += '</div></div>';
-            picturesDiv.innerHTML = picturesHtml;
-            
-            this.messagesContainer.appendChild(picturesDiv);
-            
-            // Добавляем обработчики событий для изображений после создания DOM
-            imageIds.forEach(({ id, data }) => {
-                const imgElement = document.getElementById(id);
-                const containerElement = document.getElementById(`container-${id}`);
-                
-                if (imgElement && containerElement) {
-                    // Обработчик успешной загрузки
-                    imgElement.addEventListener('load', () => {
-                        console.log('✅ Изображение загружено:', data.src);
-                        imgElement.style.cursor = 'pointer';
-                    });
-                    
-                    // Обработчик ошибки загрузки
-                    imgElement.addEventListener('error', () => {
-                        console.error('❌ Ошибка загрузки изображения:', data.src);
-                        containerElement.innerHTML = `
-                            <div class="diogen-image-error">
-                                ❌ Не удалось загрузить изображение<br>
-                                <a href="${data.src}" target="_blank">${data.src}</a>
-                            </div>
-                        `;
-                    });
-                    
-                    // Обработчик клика для открытия в новой вкладке
-                    imgElement.addEventListener('click', () => {
-                        window.open(data.src, '_blank');
-                    });
-                }
-            });
-            
-            this.scrollToBottom();
+            picturesHtml += '</div>';
+            return picturesHtml;
         }
         
-        getPictureData(data) {
-            console.log('🖼️ Получаем данные изображения:', data);
+        generateActionButtonsHtml(actions) {
+            if (!actions || actions.length === 0) return '';
             
-            if (typeof data === 'object' && data !== null && data.src) {
-                return {
-                    src: data.src,
-                    alt: data.alt || ''
-                };
-            } else if (typeof data === 'string' && data.trim()) {
-                return {
-                    src: data.trim(),
-                    alt: ''
-                };
-            }
-            
-            console.warn('⚠️ Некорректные данные изображения:', data);
-            return { src: '', alt: '' };
-        }
-        
-        renderActionButtons(actions) {
-            if (!actions || actions.length === 0) return;
-            
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'diogen-message diogen-bot-message';
-            
-            let buttonsHtml = '<div class="diogen-message-content"><div class="diogen-action-buttons">';
+            let buttonsHtml = '<div class="diogen-action-buttons">';
             actions.forEach(action => {
-                // Новый формат: action.title
                 const buttonText = action.title || action.label || 'Действие';
                 const buttonValue = action.value || action.title || buttonText;
                 buttonsHtml += `<button class="diogen-action-button" data-action="${buttonValue}">${buttonText}</button>`;
             });
-            buttonsHtml += '</div></div>';
+            buttonsHtml += '</div>';
             
-            actionsDiv.innerHTML = buttonsHtml;
-            this.messagesContainer.appendChild(actionsDiv);
+            return buttonsHtml;
+        }
+        
+        attachCompositeMessageHandlers(messageDiv, components) {
+            // Обработчики для изображений
+            const images = messageDiv.querySelectorAll('.diogen-picture-image');
+            images.forEach(imgElement => {
+                const containerElement = imgElement.parentElement;
+                const imageSrc = imgElement.getAttribute('data-src');
+                
+                // Обработчик успешной загрузки
+                imgElement.addEventListener('load', () => {
+                    console.log('✅ Изображение загружено:', imageSrc);
+                    imgElement.style.cursor = 'pointer';
+                    // Скроллинг после загрузки изображения
+                    this.forceScrollToLastMessage(50);
+                });
+                
+                // Обработчик ошибки загрузки
+                imgElement.addEventListener('error', () => {
+                    console.error('❌ Ошибка загрузки изображения:', imageSrc);
+                    containerElement.innerHTML = `
+                        <div class="diogen-image-error">
+                            ❌ Не удалось загрузить изображение<br>
+                            <a href="${imageSrc}" target="_blank">${imageSrc}</a>
+                        </div>
+                    `;
+                    // Скроллинг после обработки ошибки изображения
+                    this.forceScrollToLastMessage(50);
+                });
+                
+                // Обработчик клика для открытия в новой вкладке
+                imgElement.addEventListener('click', () => {
+                    window.open(imageSrc, '_blank');
+                });
+            });
             
-            // Добавляем обработчики событий для кнопок действий
-            actionsDiv.querySelectorAll('.diogen-action-button').forEach(button => {
+            // Обработчики для кнопок действий
+            const actionButtons = messageDiv.querySelectorAll('.diogen-action-button');
+            actionButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     const action = e.target.getAttribute('data-action');
                     console.log('🔘 Нажата кнопка:', action);
                     this.handleActionClick(action);
                 });
             });
-            
-            this.scrollToBottom();
-        }
-        
-        updateSendButton() {
-            const hasText = this.inputField.value.trim().length > 0;
-            this.sendButton.disabled = !hasText || this.isLoading;
-            
-            // Меняем цвет иконки в зависимости от состояния
-            const svgPath = this.sendButton.querySelector('path');
-            if (svgPath) {
-                if (!hasText || this.isLoading) {
-                    svgPath.setAttribute('fill', '#9CA3AF'); // Серый цвет
-                } else {
-                    svgPath.setAttribute('fill', '#FFFFFF'); // Черный цвет
-                }
-            }
         }
         
         handleActionClick(action) {
@@ -1033,6 +1959,40 @@
             actionButtons.forEach(button => {
                 button.disabled = false;
             });
+        }
+        
+        getPictureData(data) {
+            console.log('🖼️ Получаем данные изображения:', data);
+            
+            if (typeof data === 'object' && data !== null && data.src) {
+                return {
+                    src: data.src,
+                    alt: data.alt || ''
+                };
+            } else if (typeof data === 'string' && data.trim()) {
+                return {
+                    src: data.trim(),
+                    alt: ''
+                };
+            }
+            
+            console.warn('⚠️ Некорректные данные изображения:', data);
+            return { src: '', alt: '' };
+        }
+        
+        updateSendButton() {
+            const hasText = this.inputField.value.trim().length > 0;
+            this.sendButton.disabled = !hasText || this.isLoading;
+            
+            // Меняем цвет иконки в зависимости от состояния
+            const svgPath = this.sendButton.querySelector('path');
+            if (svgPath) {
+                if (!hasText || this.isLoading) {
+                    svgPath.setAttribute('fill', '#9CA3AF'); // Серый цвет
+                } else {
+                    svgPath.setAttribute('fill', '#FFFFFF'); // Белый цвет
+                }
+            }
         }
     }
     
