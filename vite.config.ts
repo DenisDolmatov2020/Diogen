@@ -1,10 +1,41 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import { copyFileSync, mkdirSync, existsSync } from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    // Плагин для копирования файлов виджета
+    {
+      name: 'copy-widget-files',
+      writeBundle() {
+        const widgetDir = 'dist/widget'
+        if (!existsSync(widgetDir)) {
+          mkdirSync(widgetDir, { recursive: true })
+        }
+        
+        // Копируем файлы виджета
+        const filesToCopy = [
+          'widget/diogen-chat-widget.js',
+          'widget/diogen-chat-widget.css',
+          'widget/example.html',
+          'widget/README.md'
+        ]
+        
+        filesToCopy.forEach(file => {
+          try {
+            const fileName = file.split('/').pop()
+            copyFileSync(file, `${widgetDir}/${fileName}`)
+            console.log(`✅ Скопирован: ${file} → ${widgetDir}/${fileName}`)
+          } catch (error) {
+            console.warn(`⚠️ Не удалось скопировать ${file}:`, (error as Error).message)
+          }
+        })
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
@@ -21,8 +52,8 @@ export default defineConfig({
         target: 'https://knowledge.slovo-soft.ru', // Fallback
         changeOrigin: true,
         secure: false,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
             // Читаем реальный target из заголовка
             const targetUrl = req.headers['x-target-url'] as string;
             
@@ -50,11 +81,11 @@ export default defineConfig({
             }
           });
           
-          proxy.on('proxyRes', (proxyRes, req, res) => {
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('📥 Proxy response:', proxyRes.statusCode, 'for', req.url);
           });
           
-          proxy.on('error', (err, req, res) => {
+          proxy.on('error', (err, _req, _res) => {
             console.error('❌ Proxy error:', err.message);
           });
         }
