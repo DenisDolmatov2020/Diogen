@@ -47,7 +47,58 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Динамический прокси для виджета
+      // Новый прокси для функции Netlify (локальная разработка)
+      '/api/proxy': {
+        target: 'https://knowledge.slovo-soft.ru',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Читаем реальный target из заголовка
+            const targetUrl = req.headers['x-target-url'] as string;
+            const token = req.headers['x-token'] as string;
+            
+            if (targetUrl) {
+              try {
+                const url = new URL(targetUrl);
+                console.log('🔄 Proxy to:', targetUrl);
+                
+                // Обновляем target динамически
+                proxyReq.setHeader('Host', url.host);
+                proxyReq.path = url.pathname + (url.search || '');
+                
+                // Добавляем авторизацию если есть токен
+                if (token) {
+                  proxyReq.setHeader('Authorization', `Basic ${token}`);
+                }
+                
+                // Удаляем наши служебные заголовки
+                proxyReq.removeHeader('x-target-url');
+                proxyReq.removeHeader('x-token');
+                
+              } catch (error) {
+                console.error('❌ Invalid target URL:', targetUrl);
+                // Используем fallback
+                proxyReq.path = '/api/v1/mentorium';
+              }
+            } else {
+              // Fallback для случаев без заголовка
+              console.log('🔄 Fallback proxy to /api/v1/mentorium');
+              proxyReq.path = '/api/v1/mentorium';
+            }
+          });
+          
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('📥 Proxy response:', proxyRes.statusCode, 'for', req.url);
+          });
+          
+          proxy.on('error', (err, _req, _res) => {
+            console.error('❌ Proxy error:', err.message);
+          });
+        }
+      },
+      
+      // Динамический прокси для виджета (старый путь для обратной совместимости)
       '/api/widget-proxy': {
         target: 'https://knowledge.slovo-soft.ru', // Fallback
         changeOrigin: true,
