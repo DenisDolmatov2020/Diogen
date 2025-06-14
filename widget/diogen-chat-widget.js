@@ -1025,7 +1025,6 @@
             // Используем прокси если API находится на другом домене
             const isDifferentOrigin = apiOrigin !== currentOrigin;
             
-            // В режиме разработки (localhost) всегда используем прокси для внешних API
             const isLocalhost = window.location.hostname === 'localhost' || 
                                window.location.hostname === '127.0.0.1' ||
                                window.location.hostname.includes('localhost');
@@ -1034,10 +1033,8 @@
                              window.location.port === '3000' ||
                              window.location.port === '8080';
             
-            // На продакшене используем прокси для внешних API
-            const isProduction = !isLocalhost;
-            
-            const shouldUse = isDifferentOrigin && (isProduction || (isLocalhost && isDevPort));
+            // Используем прокси для всех внешних API (и в dev, и в prod)
+            const shouldUse = isDifferentOrigin;
             
             console.log('🔄 Определение необходимости прокси:', {
                 currentOrigin,
@@ -1045,8 +1042,8 @@
                 isDifferentOrigin,
                 isLocalhost,
                 isDevPort,
-                isProduction,
-                shouldUse
+                shouldUse,
+                note: shouldUse ? (isLocalhost ? 'Используем dev прокси' : 'Используем CORS прокси') : 'Прямое подключение'
             });
             
             return shouldUse;
@@ -1054,8 +1051,17 @@
         
         // Генерируем URL для прокси
         generateProxyUrl() {
-            // Используем функцию Netlify для прокси
-            return '/api/proxy';
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname.includes('localhost');
+            
+            if (isLocalhost) {
+                // В dev режиме используем локальный прокси
+                return '/api/proxy';
+            } else {
+                // В продакшене используем публичный CORS прокси
+                return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(this.config.apiUrl);
+            }
         }
         
         // Получаем финальный URL для запроса
@@ -1544,15 +1550,35 @@
                 console.log('📤 Отправляем запрос с reference_id:', this.referenceId);
                 console.log('📤 Полный payload:', JSON.stringify(payload, null, 2));
                 
+                // Формируем заголовки в зависимости от типа подключения
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                const isLocalhost = window.location.hostname === 'localhost' || 
+                                   window.location.hostname === '127.0.0.1' ||
+                                   window.location.hostname.includes('localhost');
+                
+                if (this.shouldUseProxy()) {
+                    if (isLocalhost) {
+                        // Локальный dev прокси - используем заголовки для Vite прокси
+                        headers['X-Target-URL'] = this.config.apiUrl;
+                        headers['X-TOKEN'] = btoa(this.config.basicLogin + ':' + this.config.basicPassword);
+                        console.log('🔄 Используем dev прокси с заголовками:', headers);
+                    } else {
+                        // Публичный CORS прокси - отправляем Authorization напрямую
+                        headers['Authorization'] = 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword);
+                        console.log('🌐 Используем CORS прокси с заголовками:', headers);
+                    }
+                } else {
+                    // Прямое подключение
+                    headers['Authorization'] = 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword);
+                    console.log('🌐 Прямое подключение с заголовками:', headers);
+                }
+                
                 const response = await fetch(this.getApiUrl(), {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa(this.config.basicLogin + ':' + this.config.basicPassword),
-                        // Заголовки для функции Netlify прокси
-                        'X-Target-URL': this.config.apiUrl,
-                        'X-TOKEN': btoa(this.config.basicLogin + ':' + this.config.basicPassword)
-                    },
+                    headers: headers,
                     body: JSON.stringify(payload)
                 });
 
