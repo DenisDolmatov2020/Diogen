@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест улучшенного прокси - Diogen Chat Widget</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffd700;
+        }
+        
+        .test-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+        
+        .status.info {
+            background: rgba(33, 150, 243, 0.3);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+        }
+        
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .console-log {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест улучшенного прокси</h1>
+        
+        <div class="test-info">
+            <h3>Информация о тесте:</h3>
+            <div class="status info">
+                <strong>Текущий домен:</strong> <span id="current-domain"></span>
+            </div>
+            <div class="status info">
+                <strong>API URL:</strong> <code>https://knowledge.slovo-soft.ru/api/v1/mentorium</code>
+            </div>
+            <div class="status info">
+                <strong>Прокси URL:</strong> <span id="proxy-url"></span>
+            </div>
+            <div class="status info">
+                <strong>Использует прокси:</strong> <span id="uses-proxy"></span>
+            </div>
+        </div>
+        
+        <div class="test-info">
+            <h3>Тестирование:</h3>
+            <button onclick="testProxyLogic()">🔍 Проверить логику прокси</button>
+            <button onclick="testNetlifyFunction()">🌐 Тест Netlify функции</button>
+            <button onclick="testDirectAPI()">🔗 Тест прямого API</button>
+            <button onclick="clearLogs()">🧹 Очистить логи</button>
+        </div>
+        
+        <div id="test-results"></div>
+        
+        <div class="console-log" id="console-output">
+            <div style="color: #87ceeb;">Консоль готова к тестированию...</div>
+        </div>
+    </div>
+
+    <!-- Подключение виджета -->
+    <script 
+        src="./diogen-chat-widget.js"
+        data-diogen-api-url="https://knowledge.slovo-soft.ru/api/v1/mentorium"
+        data-diogen-project="pfki"
+        data-diogen-project-id="000"
+        data-diogen-user-id="test-user"
+        data-diogen-basic-login="pfki"
+        data-diogen-basic-password="pfki"
+        data-diogen-title="Test Assistant"
+        data-diogen-theme="dark">
+    </script>
+
+    <script>
+        // Перехватываем console.log для отображения в интерфейсе
+        const originalLog = console.log;
+        const consoleOutput = document.getElementById('console-output');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '5px';
+            logEntry.style.borderLeft = '3px solid #4caf50';
+            logEntry.style.paddingLeft = '10px';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.innerHTML = `<span style="color: #888;">[${timestamp}]</span> ${args.join(' ')}`;
+            
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        // Инициализация информации о тесте
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('current-domain').textContent = window.location.origin;
+            
+            // Ждем инициализации виджета
+            setTimeout(() => {
+                if (window.diogenWidget) {
+                    const usesProxy = window.diogenWidget.shouldUseProxy();
+                    const proxyUrl = usesProxy ? window.diogenWidget.generateProxyUrl() : 'Не используется';
+                    
+                    document.getElementById('uses-proxy').textContent = usesProxy ? 'Да' : 'Нет';
+                    document.getElementById('proxy-url').textContent = proxyUrl;
+                }
+            }, 1000);
+        });
+        
+        function addTestResult(title, status, message) {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `status ${status}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function testProxyLogic() {
+            console.log('🔍 Тестирование логики прокси...');
+            
+            if (!window.diogenWidget) {
+                addTestResult('Логика прокси', 'error', 'Виджет не инициализирован');
+                return;
+            }
+            
+            const widget = window.diogenWidget;
+            const currentOrigin = window.location.origin;
+            const apiUrl = 'https://knowledge.slovo-soft.ru/api/v1/mentorium';
+            const apiOrigin = new URL(apiUrl).origin;
+            
+            console.log('Текущий домен:', currentOrigin);
+            console.log('API домен:', apiOrigin);
+            console.log('Разные домены:', apiOrigin !== currentOrigin);
+            
+            const shouldUseProxy = widget.shouldUseProxy();
+            const proxyUrl = shouldUseProxy ? widget.generateProxyUrl() : null;
+            const finalUrl = widget.getApiUrl();
+            
+            console.log('Использует прокси:', shouldUseProxy);
+            console.log('Прокси URL:', proxyUrl);
+            console.log('Финальный URL:', finalUrl);
+            
+            addTestResult('Логика прокси', 'success', `Прокси: ${shouldUseProxy ? 'Да' : 'Нет'}, URL: ${finalUrl}`);
+        }
+        
+        async function testNetlifyFunction() {
+            console.log('🌐 Тестирование Netlify функции...');
+            
+            try {
+                const response = await fetch('/api/proxy', {
+                    method: 'OPTIONS'
+                });
+                
+                console.log('OPTIONS запрос статус:', response.status);
+                console.log('CORS заголовки:', response.headers.get('Access-Control-Allow-Origin'));
+                
+                if (response.ok) {
+                    addTestResult('Netlify функция', 'success', 'OPTIONS запрос успешен');
+                } else {
+                    addTestResult('Netlify функция', 'error', `OPTIONS запрос неудачен: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Ошибка тестирования Netlify функции:', error);
+                addTestResult('Netlify функция', 'error', error.message);
+            }
+        }
+        
+        async function testDirectAPI() {
+            console.log('🔗 Тестирование прямого API...');
+            
+            try {
+                const response = await fetch('https://knowledge.slovo-soft.ru/api/v1/mentorium', {
+                    method: 'OPTIONS'
+                });
+                
+                console.log('Прямой API OPTIONS статус:', response.status);
+                console.log('CORS заголовки:', response.headers.get('Access-Control-Allow-Origin'));
+                
+                if (response.ok) {
+                    addTestResult('Прямой API', 'success', 'CORS настроен правильно');
+                } else {
+                    addTestResult('Прямой API', 'error', `CORS не настроен: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Ошибка тестирования прямого API:', error);
+                addTestResult('Прямой API', 'error', 'CORS блокирует запрос - нужен прокси');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('console-output').innerHTML = '<div style="color: #87ceeb;">Логи очищены...</div>';
+            document.getElementById('test-results').innerHTML = '';
+        }
+    </script>
+</body>
+</html> 
